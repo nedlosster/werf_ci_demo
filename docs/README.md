@@ -13,7 +13,7 @@
 ## Runbook'и
 
 - [runbooks/deploy.md](runbooks/deploy.md) -- публикация, откат и очистка демо
-  в окружениях dev / stage / prod.
+  в окружениях dev / prod.
 
 ## Связанные документы
 

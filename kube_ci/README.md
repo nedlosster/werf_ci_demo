@@ -7,23 +7,22 @@
 Развёртывание самих кластеров в скоп демо не входит -- требования к среде
 описаны в [../docs/k8s-requirements.md](../docs/k8s-requirements.md).
 
-## Окружения dev / stage / prod
+## Окружения dev / prod
 
-Три параллельных самодостаточных каталога окружений -- `dev/`, `stage/`,
-`prod/`. Каждое запускается независимо и отличается только своим `k8s_defs`
+Два параллельных самодостаточных каталога окружений -- `dev/` и `prod/`.
+Каждое запускается независимо и отличается только своим `k8s_defs`
 (кластер) и `productlist` (какую env-функцию `.helm/def.sh` использует продукт).
 
-ВРЕМЕННО все три `k8s_defs` указывают на один физический preprod-кластер
+ВРЕМЕННО оба `k8s_defs` указывают на один физический preprod-кластер
 (там же работает preprod cmdb). Продукты при этом различаются неймспейсом
-(`<NAMESPACE>-dev`, `-stage`, `-prod`). Когда появятся отдельные кластеры
-dev/stage/prod -- меняется только `KUBECONTEXT`/`REGISTRY` в соответствующем
-`k8s_defs`.
+(`<NAMESPACE>-dev`, `-prod`). Когда появятся отдельные кластеры dev/prod --
+меняется только `KUBECONTEXT`/`REGISTRY` в соответствующем `k8s_defs`.
 
 ## Отличия от исходного kube_ci
 
 | Аспект | Исходный kube_ci | Эта копия |
 |---|---|---|
-| Окружения | 4 (minikube + 3 удалённых k8s) | три -- `dev/`, `stage/`, `prod/` |
+| Окружения | 4 (minikube + 3 удалённых k8s) | два -- `dev/`, `prod/` |
 | Источник продуктов | клонирование `git@github.com:welltime/<product>` | локальные `../../apps/<product>` (symlink) |
 | werf | разнобой: `trdl werf 2`, `trdl werf 1.2`, `multiwerf` | единый `trdl use werf 2 stable` |
 | Доп. сервисы | kafka, zeebe, efk, grafana | нет |
@@ -39,7 +38,7 @@ kube_ci/
 │   ├── 04-dissmiss.sh           # dissmiss() -- werf dismiss
 │   ├── 05-purge-stages-local.sh # purge_stages_local() -- сброс stages
 │   └── 10-purge-werf-registry.sh# полная очистка werf-кеша и образов
-└── <env>/                       # dev/ | stage/ | prod/ -- одинаковый набор:
+└── <env>/                       # dev/ | prod/ -- одинаковый набор:
     ├── 00-build-deploy.sh       # публикация (werf converge)
     ├── 01-dissmiss.sh           # откат (требует product key или --all)
     ├── 02-purge-stages.sh       # очистка
@@ -57,7 +56,7 @@ kube_ci/
 
 См. [../docs/runbooks/deploy.md](../docs/runbooks/deploy.md).
 
-Команды запускать из каталога окружения (`cd dev/`, `cd stage/`, `cd prod/`):
+Команды запускать из каталога окружения (`cd dev/`, `cd prod/`):
 пути резолвятся через `$BASH_SOURCE`, а `source productlist`/`source k8s_defs` --
 относительно `$PWD`.
 
