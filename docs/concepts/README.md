@@ -11,10 +11,12 @@
 ## Статьи
 
 - [werf-intro.md](werf-intro.md) -- введение в werf: что делает, `converge`,
-  giterminism, установка через trdl.
-- [werf-vs-alternatives.md](werf-vs-alternatives.md) -- сравнение с Docker +
-  Helm, Kustomize, GitOps-операторами (планируется).
-- [delivery-to-k8s.md](delivery-to-k8s.md) -- модель доставки в Kubernetes:
-  сборка, публикация образов, релиз чарта (планируется).
+  giterminism, stages, установка через trdl.
+- [werf-vs-alternatives.md](werf-vs-alternatives.md) -- сравнение с `docker
+  build` + `kubectl apply`, Helm, Helmfile, Kustomize, Skaffold и
+  GitOps-операторами ArgoCD/Flux.
+- [delivery-to-k8s.md](delivery-to-k8s.md) -- модель доставки: единый контур
+  kube_ci, контракт `.helm/def.sh`, поток converge, три базовые операции.
 - [security-and-tradeoffs.md](security-and-tradeoffs.md) -- компромиссы схемы:
-  insecure-registry, единый кластер для dev/prod, доступы (планируется).
+  insecure-registry, loose-giterminism, единый кластер dev/prod, nip.io,
+  ключ секретов, dev-SSH-под.
