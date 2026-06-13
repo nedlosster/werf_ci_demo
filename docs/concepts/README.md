@@ -12,6 +12,8 @@
 
 - [werf-intro.md](werf-intro.md) -- введение в werf: что делает, `converge`,
   giterminism, stages, установка через trdl.
+- [werf-install.md](werf-install.md) -- установка werf по шагам: trdl, канал
+  `werf 2 stable`, активация в сессии, проверка, встраивание в CI.
 - [werf-vs-alternatives.md](werf-vs-alternatives.md) -- сравнение с `docker
   build` + `kubectl apply`, Helm, Helmfile, Kustomize, Skaffold и
   GitOps-операторами ArgoCD/Flux.
