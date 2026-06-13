@@ -48,11 +48,11 @@ dev() {
     export APPNAME=app1-java-react                              # имя приложения (репозиторий образа)
     export ENVNAME=dev                                   # имя окружения
     export NAMESPACE=app1-java-react                             # неймспейс (по умолчанию = APPNAME)
-    export CI_URL=app1-java-react-dev-192.168.125.31.nip.io     # хост для ingress (nip.io)
+    export CI_URL=app1-java-react-dev-192.168.123.31.nip.io     # хост для ingress (nip.io)
     # любые CI_* переменные пробрасываются в helm через --set (в нижнем регистре)
 }
 
-prod() { dev; export ENVNAME=prod; export CI_URL=app1-java-react-prod-192.168.125.31.nip.io; }
+prod() { dev; export ENVNAME=prod; export CI_URL=app1-java-react-prod-192.168.123.31.nip.io; }
 ```
 
 Минимально обязательны `APPNAME`, `ENVNAME`, `CI_URL`. Остальное -- опционально.
