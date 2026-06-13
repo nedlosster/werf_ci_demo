@@ -1,5 +1,5 @@
 env: prod
-domain: app2-python-angular-prod-192.168.125.31.nip.io
+domain: app2-python-angular-prod-192.168.123.31.nip.io
 backend:
   replicas: 2
 frontend:

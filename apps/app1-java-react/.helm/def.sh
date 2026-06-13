@@ -6,7 +6,7 @@ function dev() {
     export APPNAME=app1-java-react
     export ENVNAME=dev
     export NAMESPACE=app1-java-react
-    export CI_URL=app1-java-react-dev-192.168.125.31.nip.io
+    export CI_URL=app1-java-react-dev-192.168.123.31.nip.io
     export CI_TAG=$(cat VERSION)
 }
 
@@ -14,6 +14,6 @@ function prod() {
     export APPNAME=app1-java-react
     export ENVNAME=prod
     export NAMESPACE=app1-java-react
-    export CI_URL=app1-java-react-prod-192.168.125.31.nip.io
+    export CI_URL=app1-java-react-prod-192.168.123.31.nip.io
     export CI_TAG=$(cat VERSION)
 }
