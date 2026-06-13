@@ -1,0 +1,28 @@
+# syntax=docker/dockerfile:1
+# dev-образ бекенда app1-java-react: полный maven+JDK, спит в кластере.
+# Исходники НЕ кладутся в образ -- клонируются в /workspace (PVC) initContainer'ом.
+# Кеш maven (~/.m2) и .vscode-server -- через симлинки в /home/app/homeapp (PVC).
+# Контекст сборки -- корень продукта (apps/app1-java-react).
+FROM maven:3.9-eclipse-temurin-17
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends git openssh-client sudo procps ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
+# non-root dev-пользователь с passwordless sudo (нужен init-скрипту)
+RUN useradd -m -u 10001 -s /bin/bash app && \
+    echo "app ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/app && chmod 0440 /etc/sudoers.d/app
+
+USER app
+WORKDIR /home/app
+
+# Симлинки кешей/vscode на единый PVC homeapp (наполняется в runtime)
+RUN mkdir -p /home/app/homeapp/.m2 /home/app/homeapp/.vscode-server /home/app/homeapp/.config && \
+    ln -sfn /home/app/homeapp/.m2 /home/app/.m2 && \
+    ln -sfn /home/app/homeapp/.vscode-server /home/app/.vscode-server && \
+    ln -sfn /home/app/homeapp/.config /home/app/.config
+
+COPY --chown=app:app install/prepare-scripts /home/app/prepare-scripts
+
+EXPOSE 8080
+ENTRYPOINT ["/bin/sleep", "infinity"]

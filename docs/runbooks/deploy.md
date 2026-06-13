@@ -37,7 +37,7 @@ cd kube_ci/dev
 ```bash
 cd kube_ci/dev
 ./00-build-deploy.sh         # werf converge всех продуктов из productlist
-./00-build-deploy.sh cmdb-web   # либо только выбранный продукт
+./00-build-deploy.sh app1-java-react   # либо только выбранный продукт
 ```
 
 `werf converge` собирает образы, публикует в in-cluster registry и
@@ -48,7 +48,7 @@ cd kube_ci/dev
 
 ```bash
 cd kube_ci/dev
-./01-dissmiss.sh cmdb-web     # werf dismiss конкретного продукта
+./01-dissmiss.sh app1-java-react     # werf dismiss конкретного продукта
 ./01-dissmiss.sh --all        # снять все продукты из productlist
 ```
 

@@ -1,0 +1,30 @@
+# syntax=docker/dockerfile:1
+# dev-образ фронтенда app1-java-react: полный node + pnpm, спит в кластере.
+# Исходники клонируются в /workspace (PVC) initContainer'ом.
+# Кеш pnpm-store и .vscode-server -- через симлинки в /home/app/homeapp (PVC).
+# Контекст сборки -- корень продукта (apps/app1-java-react).
+FROM node:20-bookworm
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends git openssh-client sudo procps ca-certificates && \
+    rm -rf /var/lib/apt/lists/* && \
+    corepack enable
+
+RUN useradd -m -u 10001 -s /bin/bash app && \
+    echo "app ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/app && chmod 0440 /etc/sudoers.d/app
+
+USER app
+WORKDIR /home/app
+
+# Симлинки pnpm-store/.cache/vscode на единый PVC homeapp
+RUN mkdir -p /home/app/homeapp/.local/share/pnpm /home/app/homeapp/.cache /home/app/homeapp/.vscode-server /home/app/homeapp/.config && \
+    mkdir -p /home/app/.local/share && \
+    ln -sfn /home/app/homeapp/.local/share/pnpm /home/app/.local/share/pnpm && \
+    ln -sfn /home/app/homeapp/.cache /home/app/.cache && \
+    ln -sfn /home/app/homeapp/.vscode-server /home/app/.vscode-server && \
+    ln -sfn /home/app/homeapp/.config /home/app/.config
+
+COPY --chown=app:app install/prepare-scripts /home/app/prepare-scripts
+
+EXPOSE 8080
+ENTRYPOINT ["/bin/sleep", "infinity"]

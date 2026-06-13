@@ -25,7 +25,7 @@ VERSION (источник истины)
 Версия дублируется в нескольких местах; `set-version.sh` держит их
 синхронными. Набор файлов зависит от стека продукта.
 
-| Слой | asset-svc (Python/Angular) | cmdb-web (Java/React) |
+| Слой | app2-python-angular (Python/Angular) | app1-java-react (Java/React) |
 |---|---|---|
 | источник | `VERSION` | `VERSION` |
 | бекенд | `backend/src/<pkg>/_version.py`, `pyproject.toml` | `backend/pom.xml` (`<version>`) или `build.gradle` |
@@ -49,7 +49,7 @@ VERSION (источник истины)
   не требует);
 - при `bump` -- `git add` изменённых файлов в текущий коммит.
 
-Для cmdb-web (Java) ветка `case` дополняется обработкой `pom.xml`/`build.gradle`
+Для app1-java-react (Java) ветка `case` дополняется обработкой `pom.xml`/`build.gradle`
 вместо `_version.py`/`pyproject.toml`.
 
 ## Связь с werf (тег образа)

@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app1-java-react-config
+  labels:
+    {{- include "app1.labels" . | nindent 4 }}
+data:
+  APP_ENV: {{ .Values.env | quote }}
+  DB_HOST: app1-java-react-postgres
+  DB_PORT: {{ .Values.postgres.port | quote }}
+  DB_NAME: {{ .Values.postgres.database | quote }}
+  DB_USER: {{ .Values.postgres.user | quote }}

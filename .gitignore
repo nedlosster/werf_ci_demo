@@ -1,15 +1,17 @@
-# CLAUDE.md и .claude/ -- оригиналы в claude-rules, здесь symlinks
-/CLAUDE.md
-/.claude/
-
 # окружения kube_ci: продукты подтягиваются локально, конфиг -- локальный
 kube_ci/*/products
 kube_ci/*/products/*
 kube_ci/*/productlist
 *.log
+/CLAUDE.md
+/.claude/
 
-# werf
-.werf-*
+
+# werf: локальные build-артефакты (но НЕ .werf-partial/ -- это исходник)
+.werf/
+
+# ssh-ключи dev-схемы (кладёт оператор)
+apps/*/.helm/tmp/
 
 # артефакты генерации (диаграммы рендерятся, PDF собираются по запросу)
 docs/pdf/

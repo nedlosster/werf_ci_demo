@@ -7,6 +7,6 @@
 declare -A PRODUCTS
 
 PRODUCTS=(
-    [cmdb-web]=prod
-    [asset-svc]=prod
+    [app1-java-react]=prod
+    [app2-python-angular]=prod
 )

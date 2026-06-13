@@ -1,0 +1,36 @@
+# Дефолты (prod-ориентированные). Окружение переключается values-<env>.yaml,
+# который kube_ci подгружает через --values по ENVNAME (dev|prod).
+
+# env: dev | prod -- управляет рендером dev/prod-манифестов.
+env: prod
+
+domain: app1-java-react.local
+
+backend:
+  replicas: 1
+  port: 8080
+frontend:
+  replicas: 1
+  port: 8080
+
+postgres:
+  image: postgres:16
+  storageClass: standard
+  storageSize: 5Gi
+  port: 5432
+  user: app1
+  database: app1
+  # демо: пароль в values (в реальном проекте -- werf secret)
+  password: app1pass
+
+pgadmin:
+  enabled: false
+  image: dpage/pgadmin4:8
+  email: admin@example.com
+  password: admin
+
+# dev-схема: размеры persistent-volume'ов
+dev:
+  workspaceSize: 5Gi
+  homeappSize: 5Gi
+  storageClass: standard

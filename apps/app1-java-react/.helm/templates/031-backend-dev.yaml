@@ -1,0 +1,82 @@
+{{- if eq .Values.env "dev" }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: app1-java-react-backend
+  labels:
+    {{- include "app1.labels" . | nindent 4 }}
+spec:
+  selector:
+    app.kubernetes.io/name: {{ include "app1.name" . }}
+    component: backend
+  ports:
+    - port: {{ .Values.backend.port }}
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: app1-java-react-backend-dev
+  labels:
+    {{- include "app1.labels" . | nindent 4 }}
+spec:
+  serviceName: app1-java-react-backend
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "app1.name" . }}
+      component: backend
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "app1.name" . }}
+        component: backend
+    spec:
+      securityContext:
+        fsGroup: 10001
+      initContainers:
+        - name: prepare-dev-env
+          image: {{ index .Values.werf.image "backend-dev" }}
+          command: ["sh", "-c", "cd /home/app/prepare-scripts && sudo ./init-dev-env.sh"]
+          volumeMounts:
+            - { name: workspace, mountPath: /workspace }
+            - { name: homeapp, mountPath: /home/app/homeapp }
+            - { name: id-rsa-vcs, mountPath: /home/app/.ssh/id_rsa, subPath: id_rsa }
+      containers:
+        - name: backend
+          image: {{ index .Values.werf.image "backend-dev" }}
+          # ENTRYPOINT образа -- sleep infinity; разработчик заходит VS Code Remote.
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: app1-java-react-config
+            - secretRef:
+                name: app1-java-react-secrets
+          volumeMounts:
+            - { name: workspace, mountPath: /workspace }
+            - { name: homeapp, mountPath: /home/app/homeapp }
+            - { name: id-rsa-vcs, mountPath: /home/app/.ssh/id_rsa, subPath: id_rsa }
+      volumes:
+        - name: id-rsa-vcs
+          secret:
+            secretName: id-rsa-vcs
+            defaultMode: 0600
+  volumeClaimTemplates:
+    - metadata:
+        name: workspace
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: {{ .Values.dev.storageClass }}
+        resources:
+          requests:
+            storage: {{ .Values.dev.workspaceSize }}
+    - metadata:
+        name: homeapp
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: {{ .Values.dev.storageClass }}
+        resources:
+          requests:
+            storage: {{ .Values.dev.homeappSize }}
+{{- end }}

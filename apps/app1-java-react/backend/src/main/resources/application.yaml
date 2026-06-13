@@ -1,0 +1,20 @@
+server:
+  port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+spring:
+  application:
+    name: app1-java-react-backend
+
+# version подставляется Maven resource-filtering из <version> pom.xml
+app:
+  version: '@project.version@'
