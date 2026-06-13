@@ -1,0 +1,45 @@
+{{- if ne .Values.env "dev" }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: app2-python-angular-frontend
+  labels:
+    {{- include "app2.labels" . | nindent 4 }}
+spec:
+  selector:
+    app.kubernetes.io/name: {{ include "app2.name" . }}
+    component: frontend
+  ports:
+    - port: {{ .Values.frontend.port }}
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app2-python-angular-frontend
+  labels:
+    {{- include "app2.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.frontend.replicas }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "app2.name" . }}
+      component: frontend
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "app2.name" . }}
+        component: frontend
+    spec:
+      containers:
+        - name: frontend
+          image: {{ index .Values.werf.image "frontend" }}
+          ports:
+            - containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+{{- end }}

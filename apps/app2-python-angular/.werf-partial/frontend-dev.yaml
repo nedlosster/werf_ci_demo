@@ -1,0 +1,5 @@
+{{- if eq (env "ENVNAME") "dev" }}
+image: frontend-dev
+context: .
+dockerfile: frontend/Dockerfile.dev
+{{- end }}

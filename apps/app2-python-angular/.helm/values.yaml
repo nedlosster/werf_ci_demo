@@ -1,0 +1,31 @@
+# Дефолты (prod). Окружение переключается values-<env>.yaml по ENVNAME.
+env: prod
+
+domain: app2-python-angular.local
+
+backend:
+  replicas: 1
+  port: 8080
+frontend:
+  replicas: 1
+  port: 8080
+
+postgres:
+  image: postgres:16
+  storageClass: standard
+  storageSize: 5Gi
+  port: 5432
+  user: app2
+  database: app2
+  password: app2pass
+
+pgadmin:
+  enabled: false
+  image: dpage/pgadmin4:8
+  email: admin@example.com
+  password: admin
+
+dev:
+  workspaceSize: 5Gi
+  homeappSize: 5Gi
+  storageClass: standard

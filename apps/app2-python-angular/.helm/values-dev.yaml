@@ -1,0 +1,4 @@
+env: dev
+domain: app2-python-angular-dev-192.168.125.31.nip.io
+pgadmin:
+  enabled: true
