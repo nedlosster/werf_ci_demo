@@ -10,10 +10,10 @@ GitLab Runner (executor `shell` или `docker` с привилегиями дл
 котором доступны:
 
 - `docker` (сборка образов werf);
-- `werf` через `trdl` (`trdl use werf 2 stable`) -- см. [werf-intro.md](werf-intro.md);
+- `werf` через `trdl` (`trdl use werf 2 stable`) -- см. [werf-intro.md](../concepts/werf-intro.md);
 - `kubectl` и `helm`;
 - доступ к кластерам окружений и in-cluster registry -- см.
-  [k8s-requirements.md](k8s-requirements.md).
+  [requirements.md](../kubernetes/requirements.md).
 
 Раннер должен иметь сетевой доступ к кластеру и insecure-registry,
 аналогично рабочей машине.

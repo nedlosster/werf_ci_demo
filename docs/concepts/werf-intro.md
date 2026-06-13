@@ -36,7 +36,7 @@ werf по умолчанию требует, чтобы конфигурация
 werf использует helm-совместимый чарт продукта (`Chart.yaml`, `templates/`,
 `values-<env>.yaml`, секреты `secrets-<env>.yaml`). Значения окружения
 прокидываются через `--set` и `--values` (контракт продукта --
-[../apps/README.md](../apps/README.md)).
+[../../apps/README.md](../../apps/README.md)).
 
 ## Установка через trdl
 

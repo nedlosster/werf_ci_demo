@@ -42,7 +42,7 @@
 | Очистка (сброс кеша сборки) | `./02-purge-stages.sh` |
 
 Полный сценарий -- [docs/runbooks/deploy.md](docs/runbooks/deploy.md).
-Требования к кластеру -- [docs/k8s-requirements.md](docs/k8s-requirements.md).
+Требования к кластеру -- [docs/kubernetes/requirements.md](docs/kubernetes/requirements.md).
 
 ## Статус
 
