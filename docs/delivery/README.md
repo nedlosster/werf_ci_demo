@@ -10,13 +10,13 @@
 
 ## Статьи
 
+- [dev-prod.md](dev-prod.md) -- модель двух окружений: единый контур, различие по
+  неймспейсу, временно общий кластер и переход на раздельные.
 - [kube-ci-operations.md](kube-ci-operations.md) -- три базовые операции
-  kube_ci: converge, dismiss, purge (планируется).
-- [dev-prod.md](dev-prod.md) -- модель двух окружений, различие по неймспейсу,
-  переход на отдельные кластеры (планируется).
-- [secrets.md](secrets.md) -- управление секретами продуктов и окружений
-  (планируется).
-- [versioning.md](versioning.md) -- схема единой версии (контейнеры/бек/фронт),
-  памятка на основе respoolman.
+  kube_ci: публикация (converge), откат (dismiss), очистка (purge).
+- [secrets.md](secrets.md) -- управление секретами продуктов: werf secret,
+  ключ WERF_SECRET_KEY, шифрование `secrets-<env>.yaml`.
+- [versioning.md](versioning.md) -- единая версия VERSION -> CI_TAG по
+  контейнерам, бекенду, фронтенду и чарту; set-version.sh.
 - [dev-in-cluster.md](dev-in-cluster.md) -- разработка внутри кластера: dev-поды
   с persistent-volume'ами (исходники, кеши, vscode-server), VS Code Remote.
