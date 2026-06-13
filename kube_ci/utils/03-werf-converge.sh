@@ -48,10 +48,10 @@ function deploy()
     --set DOMAIN="$DOMAIN" \
     --set use_ngnix_virtualserver="$USE_NGNIX_VIRTUALSERVER"
 
+  # Печать URL развёрнутых ресурсов -- в .helm/postdeploy.sh продукта
+  # (фронт/бек/swagger/pgAdmin, по образцу calligrapher).
   [ -f .helm/postdeploy.sh ] && ./.helm/postdeploy.sh "$env"
 
-  echo "Сервис доступен по адресу http://$CI_URL"
-  echo "pgAdmin:  http://$CI_URL/pgadmin"
   kubectl config set-context --current --namespace="$NAMESPACE-$ENVNAME"
 }
 

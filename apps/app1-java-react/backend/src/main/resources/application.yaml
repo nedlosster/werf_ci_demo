@@ -1,7 +1,14 @@
 server:
   port: 8080
+  # Всё приложение под /api -- так swagger-ui и его ассеты попадают под путь,
+  # который ingress маршрутизирует на бек (/api -> backend).
+  servlet:
+    context-path: /api
 
 management:
+  # actuator на отдельном порту (вне context-path) -- для k8s-проб.
+  server:
+    port: 8081
   endpoints:
     web:
       exposure:

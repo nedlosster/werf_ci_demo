@@ -5,7 +5,13 @@ from fastapi import FastAPI
 
 from app2._version import __version__
 
-app = FastAPI(title="app2-python-angular")
+# Swagger под /api -- так он доступен через ingress (/api -> backend).
+app = FastAPI(
+    title="app2-python-angular",
+    docs_url="/api/docs",
+    openapi_url="/api/openapi.json",
+    redoc_url=None,
+)
 
 
 def _connect():

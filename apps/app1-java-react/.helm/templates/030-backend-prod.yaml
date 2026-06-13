@@ -36,6 +36,7 @@ spec:
           image: {{ index .Values.werf.image "backend" }}
           ports:
             - containerPort: 8080
+            - containerPort: 8081
           envFrom:
             - configMapRef:
                 name: app1-java-react-config
@@ -44,13 +45,13 @@ spec:
           readinessProbe:
             httpGet:
               path: /actuator/health/readiness
-              port: 8080
+              port: 8081
             initialDelaySeconds: 10
             periodSeconds: 10
           livenessProbe:
             httpGet:
               path: /actuator/health/liveness
-              port: 8080
+              port: 8081
             initialDelaySeconds: 30
             periodSeconds: 15
 {{- end }}
