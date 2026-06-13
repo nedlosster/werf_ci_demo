@@ -3,6 +3,10 @@
 # Печатает URL развёрнутых ресурсов. CI_URL/ENVNAME экспортированы converge.
 env="${1:-$ENVNAME}"
 
+# Чистка ssh-ключа, положенного predeploy.sh (не оставлять на диске).
+_DIR=$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")
+rm -f "$_DIR"/tmp/id_rsa-vcs "$_DIR"/tmp/id_rsa-vcs.pub 2>/dev/null || true
+
 echo "=================================================================="
 echo "Развёрнутые ресурсы app2-python-angular (${ENVNAME}):"
 echo "  Фронт:   http://${CI_URL}/"

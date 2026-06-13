@@ -11,6 +11,10 @@ function deploy()
   env=$1 && $env
   [ -z "$NAMESPACE" ] && NAMESPACE=$APPNAME
 
+  # Хук перед деплоем (например, инъекция ssh-ключа в .helm/tmp/ для dev-clone).
+  # Должен отработать ДО werf converge -- werf читает tmp/ при рендере секрета.
+  [ -f .helm/predeploy.sh ] && ./.helm/predeploy.sh "$env"
+
   export WERF_REPO="$REGISTRY/$APPNAME"
 
   if [[ ${NAMESPACE} ]]; then KUBE_NAMESPACE=${NAMESPACE}-${ENVNAME}; fi
