@@ -1,0 +1,45 @@
+flowchart LR
+    subgraph apps["apps/ (исходники продуктов)"]
+        direction TB
+        subgraph cmdbweb["cmdb-web"]
+            cw_fe["frontend (React)"]
+            cw_be["backend (Spring Boot)"]
+            cw_helm[".helm/def.sh + werf.yaml"]
+        end
+        subgraph assetsvc["asset-svc"]
+            as_fe["frontend (Angular)"]
+            as_be["backend (FastAPI)"]
+            as_helm[".helm/def.sh + werf.yaml"]
+        end
+    end
+
+    subgraph kubeci["kube_ci/ (оркестрация)"]
+        direction TB
+        utils["utils/ converge · dismiss · purge"]
+        envdev["dev/ (00-build-deploy, k8s_defs, productlist)"]
+        envprod["prod/ (00-build-deploy, k8s_defs, productlist)"]
+        utils --- envdev
+        utils --- envprod
+    end
+
+    werf["werf converge<br/>(trdl werf 2 stable)"]
+
+    subgraph cluster["preprod-кластер (dev и prod пока на нём)"]
+        direction TB
+        registry["in-cluster registry<br/>registry-NODE.nip.io"]
+        ns_dev["ns: <app>-dev<br/>front · back · PostgreSQL · pgAdmin"]
+        ns_prod["ns: <app>-prod<br/>front · back · PostgreSQL · pgAdmin"]
+        ingress["ingress-nginx<br/>CI_URL / pgadmin"]
+    end
+
+    cmdbweb -. "pull_products (symlink)" .-> envdev
+    assetsvc -. "pull_products (symlink)" .-> envdev
+    envdev --> werf
+    envprod --> werf
+    werf -->|push образов| registry
+    werf -->|релиз| ns_dev
+    werf -->|релиз| ns_prod
+    registry --> ns_dev
+    registry --> ns_prod
+    ingress --> ns_dev
+    ingress --> ns_prod

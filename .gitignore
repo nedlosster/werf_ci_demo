@@ -1,5 +1,6 @@
-# CLAUDE.md -- оригинал в claude-rules, здесь symlink
+# CLAUDE.md и .claude/ -- оригиналы в claude-rules, здесь symlinks
 /CLAUDE.md
+/.claude/
 
 # окружения kube_ci: продукты подтягиваются локально, конфиг -- локальный
 kube_ci/*/products
@@ -9,6 +10,9 @@ kube_ci/*/productlist
 
 # werf
 .werf-*
+
+# артефакты генерации (диаграммы рендерятся, PDF собираются по запросу)
+docs/pdf/
 
 # IDE / ОС
 .idea/
