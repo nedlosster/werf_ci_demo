@@ -24,7 +24,7 @@ matched=0
 for product in "${!PRODUCTS[@]}"
 do
     if [[ " ${*} " =~ " ${product} " || " ${*} " =~ " --all " ]]; then
-        pushd "$PRODUCTS_DIR/$product" || continue
+        pushd "$(readlink -f "$PRODUCTS_DIR/$product")" || continue
         dissmiss "${PRODUCTS[$product]}"
         popd || exit 1
         matched=1

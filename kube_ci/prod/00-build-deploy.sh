@@ -17,7 +17,7 @@ export REGISTRY KUBECONTEXT KUBECONFIG
 for product in "${!PRODUCTS[@]}"
 do
     if [[ " ${*} " =~ " ${product} " || " ${*} " =~ " --all " || $# = 0 ]]; then
-        pushd "$PRODUCTS_DIR/$product" && deploy "${PRODUCTS[$product]}" && popd
+        pushd "$(readlink -f "$PRODUCTS_DIR/$product")" && deploy "${PRODUCTS[$product]}" && popd
     else
         echo "пропущен продукт ${product}"
     fi
