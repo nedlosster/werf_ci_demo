@@ -4,16 +4,32 @@
 Разворачивание кластеров в скоп демо не входит; здесь зафиксированы требования
 к среде, без которых публикация через kube_ci не заработает.
 
-ВРЕМЕННО оба окружения указывают на один физический preprod-кластер
-(там же работает preprod cmdb); требования к нему описаны ниже и применимы к
-каждому будущему кластеру dev/prod.
+ВРЕМЕННО оба окружения указывают на один физический кластер
+`k8s-public-paas` (paasfabric, внутренняя сеть с NAT и выходом в интернет --
+чтобы dev-под клонировал монорепо). Окружения dev и prod
+различаются только неймспейсом; требования к кластеру описаны ниже и применимы к
+каждому будущему отдельному кластеру dev/prod.
+
+Статья -- регистр того, что должно быть в кластере и на хосте сборки: топология,
+обязательные компоненты, in-cluster registry на nip.io, insecure-доступ к нему,
+ориентир по ресурсам, команды проверки готовности. Состав объектов, которые чарт
+создаёт внутри неймспейса, вынесен в [specifications.md](specifications.md);
+маршрутизация снаружи -- в [ingress.md](ingress.md).
 
 ## Топология
 
 - Single-node кластер (например, на KVM/VM или bare-metal).
-- Доступ к кластеру с рабочей машины: контекст в `~/.kube/config`
-  (имя контекста задаётся в `kube_ci/<env>/k8s_defs`, переопределяется через
-  `KUBECONTEXT`; сейчас по умолчанию -- контекст preprod-кластера cmdb).
+- Доступ к кластеру с рабочей машины: контекст в `~/.kube/config`. Имя контекста
+  задаётся в [`kube_ci/<env>/k8s_defs`](../../kube_ci/dev/k8s_defs), переопределяется
+  через `KUBECONTEXT`. Сейчас по умолчанию для dev и prod:
+
+  ```bash
+  KUBECONTEXT=${KUBECONTEXT:-k8sadmin-k8s-public-paas@service-k8s-public-paas}
+  KUBECONFIG=${KUBECONFIG:-~/.kube/config}
+  ```
+
+  Точка входа окружения переключает kubectl на этот контекст
+  (`kubectl config use-context`).
 
 ## Компоненты в кластере
 
@@ -27,16 +43,18 @@
 
 Реестр публикуется наружу через ingress на хосте вида
 `registry-<NODE_IP>.nip.io`. `nip.io` -- wildcard-DNS: имя
-`registry-192.168.125.31.nip.io` резолвится в `192.168.125.31` без настройки DNS.
+`registry-<NODE_IP>.nip.io` резолвится в `<NODE_IP>` без настройки DNS.
 
-В `kube_ci/<env>/k8s_defs` (сейчас одинаково для dev/prod -- preprod cmdb):
+В [`kube_ci/<env>/k8s_defs`](../../kube_ci/dev/k8s_defs) (сейчас одинаково для
+dev и prod -- кластер `k8s-public-paas`):
 
 ```bash
-NODE_IP=${K8S_NODE_IP:-192.168.125.31}
+NODE_IP=${K8S_NODE_IP:-<NODE_IP>}
 REGISTRY=${REGISTRY:-registry-${NODE_IP}.nip.io}
 ```
 
-`NODE_IP` должен указывать на адрес ноды кластера. Переопределяется
+`NODE_IP` должен указывать на адрес ноды кластера. Фактическое значение задаётся
+в [`kube_ci/<env>/k8s_defs`](../../kube_ci/dev/k8s_defs) и переопределяется
 переменной окружения `K8S_NODE_IP`.
 
 ## Доступ к реестру (insecure)
@@ -50,7 +68,7 @@ REGISTRY=${REGISTRY:-registry-${NODE_IP}.nip.io}
 
 ```json
 {
-  "insecure-registries": ["registry-192.168.125.31.nip.io"]
+  "insecure-registries": ["registry-<NODE_IP>.nip.io"]
 }
 ```
 
@@ -82,8 +100,11 @@ export WERF_SKIP_TLS_VERIFY_REGISTRY=true
 ## Ресурсы
 
 Для двух демо-продуктов (фронт + бек + PostgreSQL + pgAdmin на каждый) ориентир:
-4 vCPU, 8 GB RAM, 20 GB диска. Точные запросы задаются в `.helm/values-*.yaml`
-продуктов.
+4 vCPU, 8 GB RAM, 20 GB диска. Демо-чарты не задают `requests`/`limits` на
+поды, поэтому планирование идёт по дефолтам кластера; persistent-объём под
+PostgreSQL -- 5Gi на продукт (`postgres.storageSize` в
+[`apps/<app>/.helm/values.yaml`](../../apps/app1-java-react/.helm/values.yaml)).
+Раскладка объектов и томов по окружениям -- в [specifications.md](specifications.md).
 
 ## Проверка готовности
 
@@ -93,3 +114,14 @@ kubectl --context "$KUBECONTEXT" -n kube-system get pods -l app.kubernetes.io/co
 curl -sI http://registry-<NODE_IP>.nip.io/v2/
 docker info | grep -A2 'Insecure Registries'
 ```
+
+## Связанные статьи
+
+- [specifications.md](specifications.md) -- объекты, которые чарт продукта создаёт
+  в неймспейсе окружения, и различия dev vs prod.
+- [ingress.md](ingress.md) -- маршрутизация ingress-nginx, хосты nip.io, доступ к
+  фронту, бэкенду и pgAdmin.
+- [../concepts/security-and-tradeoffs.md](../concepts/security-and-tradeoffs.md) --
+  почему registry и TLS работают в insecure-режиме и чем это рискованно в проде.
+- [../runbooks/deploy.md](../runbooks/deploy.md) -- запуск публикации, отката и
+  очистки против подготовленного кластера.
