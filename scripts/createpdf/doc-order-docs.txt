@@ -1,0 +1,54 @@
+# Порядок документов для PDF "Контур werf + Kubernetes CI" (без раздела demo)
+# Пути относительно docs/. "## Имя" -- разрыв страницы с заголовком раздела.
+
+## Введение
+README.md
+
+## Концепции
+concepts/README.md
+concepts/werf-intro.md
+concepts/werf-vs-alternatives.md
+concepts/delivery-to-k8s.md
+concepts/security-and-tradeoffs.md
+
+## Kubernetes
+kubernetes/README.md
+kubernetes/requirements.md
+kubernetes/specifications.md
+kubernetes/ingress.md
+
+## Продукты
+products/README.md
+products/overview.md
+products/app1-java-react.md
+products/app2-python-angular.md
+products/postgres-and-init.md
+products/pgadmin.md
+
+## Поставка
+delivery/README.md
+delivery/dev-prod.md
+delivery/kube-ci-operations.md
+delivery/secrets.md
+delivery/versioning.md
+delivery/dev-in-cluster.md
+
+## Интеграции
+integrations/README.md
+integrations/gitlab-ci.md
+integrations/jenkins.md
+integrations/dora-metrics.md
+
+## Runbooks
+runbooks/README.md
+runbooks/first-deploy.md
+runbooks/deploy.md
+runbooks/cluster-connection.md
+runbooks/secrets-setup.md
+runbooks/troubleshooting.md
+
+## Глоссарий
+glossary.md
+
+## Ресурсы
+resources.md
