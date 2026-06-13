@@ -2,15 +2,14 @@
 # Параметры кластера окружения DEV. Подгружается из точек входа (source).
 # Идемпотентен.
 #
-# ВРЕМЕННО: dev/stage/prod пока указывают на один физический preprod-кластер
-# (там же крутится preprod cmdb). Различаются только ENVNAME (неймспейс из
-# .helm/def.sh продукта). Когда появится отдельный dev-кластер -- заменить
-# KUBECONTEXT/REGISTRY/NODE_IP ниже. Все значения переопределяются env-переменными.
+# Кластер k8s-public-paas (paasfabric, сеть public_cloud 192.168.123.0/24 с NAT/
+# интернетом -- чтобы dev-под клонировал монорепо с github). Различаются только
+# ENVNAME (неймспейс из .helm/def.sh). Значения переопределяются env-переменными.
 
-NODE_IP=${K8S_NODE_IP:-192.168.125.31}
+NODE_IP=${K8S_NODE_IP:-192.168.123.31}
 
 REGISTRY=${REGISTRY:-registry-${NODE_IP}.nip.io}
-KUBECONTEXT=${KUBECONTEXT:-k8sadmin-k8s-alt-paas@service-k8s-alt-paas}
+KUBECONTEXT=${KUBECONTEXT:-k8sadmin-k8s-public-paas@service-k8s-public-paas}
 KUBECONFIG=${KUBECONFIG:-~/.kube/config}
 
 kubectl config use-context "$KUBECONTEXT"
