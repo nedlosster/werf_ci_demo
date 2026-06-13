@@ -1,0 +1,33 @@
+flowchart LR
+    subgraph sources["Источники сигналов"]
+        direction TB
+        git["git-история<br/>коммиты, VERSION"]
+        pipe["пайплайны CI<br/>deploy-dev / deploy-prod"]
+        roll["rollback / dismiss<br/>01-dissmiss.sh"]
+        inc["журнал инцидентов<br/>разметка отказов"]
+    end
+
+    agg["Агрегация<br/>экспортёр + разметка инцидентов"]
+
+    subgraph dora["Метрики DORA"]
+        direction TB
+        df["Deployment Frequency"]
+        lt["Lead Time for Changes"]
+        cfr["Change Failure Rate"]
+        mttr["Mean Time to Restore"]
+    end
+
+    pipe --> agg
+    git --> agg
+    roll --> agg
+    inc --> agg
+
+    agg --> df
+    agg --> lt
+    agg --> cfr
+    agg --> mttr
+
+    pipe -.->|статусы job| df
+    git -.->|время коммита| lt
+    roll -.->|факт отката| cfr
+    inc -.->|время восстановления| mttr

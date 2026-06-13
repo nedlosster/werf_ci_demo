@@ -1,6 +1,6 @@
 # Окружение prod: собранные образы, реплики, pgAdmin выключен.
 env: prod
-domain: app1-java-react-prod-192.168.125.31.nip.io
+domain: app1-java-react-prod-192.168.123.31.nip.io
 backend:
   replicas: 2
 frontend:

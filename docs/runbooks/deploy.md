@@ -12,15 +12,15 @@ dev / prod: **публикация, откат, очистка**.
 ## Предусловия
 
 - Кластер окружения уже развёрнут и доступен -- см.
-  [../k8s-requirements.md](../k8s-requirements.md).
+  [requirements.md](../kubernetes/requirements.md).
 - В `~/.kube/config` есть контекст кластера (задаётся в `<env>/k8s_defs`,
   переопределяется через `KUBECONTEXT`).
 - `werf` подтягивается через `trdl` (`trdl use werf 2 stable`) -- см.
-  [../werf-intro.md](../werf-intro.md).
-- У каждого продукта в `apps/<product>/` есть `werf.yaml` и `.helm/` с `def.sh`
-  (контракт -- [../../apps/README.md](../../apps/README.md)). На этапе 1
-  продукты -- заготовки, поэтому реальный деплой возможен после добавления их
-  исходников и `.helm/`.
+  [werf-intro.md](../concepts/werf-intro.md).
+- У каждого продукта в `apps/<product>/` есть исходники, `werf.yaml` и `.helm/`
+  с `def.sh` (контракт -- [../../apps/README.md](../../apps/README.md)) --
+  артефакты для сборки и деплоя на месте. Вне скоупа демо -- разворачивание
+  самих кластеров (считаются готовыми) и реальная продуктовая бизнес-логика.
 
 ## Подготовка продуктов
 
@@ -62,3 +62,14 @@ cd kube_ci/dev
 ```
 
 Полная очистка werf-кеша хоста и docker-образов -- `../utils/10-purge-werf-registry.sh`.
+
+## Связанные runbook'и
+
+- [cluster-connection.md](cluster-connection.md) -- подключение к кластеру,
+  kubeconfig, insecure-registry, переопределение под отдельный кластер.
+- [secrets-setup.md](secrets-setup.md) -- генерация ключа `WERF_SECRET_KEY`,
+  правка зашифрованных значений, ротация.
+- [first-deploy.md](first-deploy.md) -- первый деплой продукта с нуля,
+  end-to-end, с чеклистом проверки.
+- [troubleshooting.md](troubleshooting.md) -- разбор типовых сбоев: TLS/registry,
+  timeout, отсутствие ключа, ImagePullBackOff, init БД, ingress 404, контекст.

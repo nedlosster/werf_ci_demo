@@ -1,9 +1,12 @@
 # Разработка внутри кластера (dev-схема)
 
-dev-вариант продукта разворачивается в Kubernetes как **долгоживущий под-песочница**
-(`sleep infinity`), к которому разработчик подключается через **VS Code Remote** и
-пишет код прямо в поде. Исходники, кеши пакетов и `.vscode-server` лежат в
-persistent-volume'ах, поэтому наработки переживают перезапуск ВМ кластера.
+dev-вариант продукта разворачивается в Kubernetes как долгоживущий
+под-песочница (`sleep infinity`), к которому разработчик подключается через VS
+Code Remote и пишет код прямо в поде. Эта статья описывает dev-схему: что именно
+рендерит окружение `dev` вместо prod-Deployment'ов, как persistent-volume'ы
+сохраняют исходники и кеши между перезапусками, как под инициализируется и как к
+нему подключиться. Сама модель окружений и переключение dev/prod -- в
+[dev-prod](dev-prod.md); запуск выкатки -- в [Операциях kube_ci](kube-ci-operations.md).
 
 Образец -- cassandra_apps / calligrapher. В демо реализовано для app1-java-react
 (бек Spring Boot, фронт React+pnpm); по тому же шаблону делается app2.
@@ -67,3 +70,16 @@ cd kube_ci/dev
 ./pull_products.sh
 ./00-build-deploy.sh app1-java-react   # werf соберёт dev-образы и развернёт dev-поды
 ```
+
+Хук предеплоя, инъекция ssh-ключа и связанный риск разобраны в
+[Компромиссах и безопасности схемы](../concepts/security-and-tradeoffs.md).
+
+## Связанные статьи
+
+- [Один контур, два окружения](dev-prod.md)
+- [Операции kube_ci](kube-ci-operations.md)
+- [Управление секретами](secrets.md)
+- [Спецификации Kubernetes](../kubernetes/specifications.md)
+- [Доставка в Kubernetes](../concepts/delivery-to-k8s.md)
+- [Компромиссы и безопасность схемы](../concepts/security-and-tradeoffs.md)
+- [app1-java-react](../products/app1-java-react.md)
