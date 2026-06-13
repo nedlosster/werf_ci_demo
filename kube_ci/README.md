@@ -5,7 +5,7 @@
 сведённая к базовому набору операций для демо: **публикация, откат, очистка**.
 
 Развёртывание самих кластеров в скоп демо не входит -- требования к среде
-описаны в [../docs/k8s-requirements.md](../docs/k8s-requirements.md).
+описаны в [../docs/kubernetes/requirements.md](../docs/kubernetes/requirements.md).
 
 ## Окружения dev / prod
 
@@ -26,7 +26,7 @@
 | Источник продуктов | клонирование `git@github.com:welltime/<product>` | локальные `../../apps/<product>` (symlink) |
 | werf | разнобой: `trdl werf 2`, `trdl werf 1.2`, `multiwerf` | единый `trdl use werf 2 stable` |
 | Доп. сервисы | kafka, zeebe, efk, grafana | нет |
-| Провижининг кластера | setup-скрипты (containerd, ssh на ноду) | вынесен в docs/k8s-requirements.md |
+| Провижининг кластера | setup-скрипты (containerd, ssh на ноду) | вынесен в docs/kubernetes/requirements.md |
 | Набор операций | полный | публикация, откат, очистка |
 
 ## Структура

@@ -12,11 +12,11 @@ dev / prod: **публикация, откат, очистка**.
 ## Предусловия
 
 - Кластер окружения уже развёрнут и доступен -- см.
-  [../k8s-requirements.md](../k8s-requirements.md).
+  [requirements.md](../kubernetes/requirements.md).
 - В `~/.kube/config` есть контекст кластера (задаётся в `<env>/k8s_defs`,
   переопределяется через `KUBECONTEXT`).
 - `werf` подтягивается через `trdl` (`trdl use werf 2 stable`) -- см.
-  [../werf-intro.md](../werf-intro.md).
+  [werf-intro.md](../concepts/werf-intro.md).
 - У каждого продукта в `apps/<product>/` есть `werf.yaml` и `.helm/` с `def.sh`
   (контракт -- [../../apps/README.md](../../apps/README.md)). На этапе 1
   продукты -- заготовки, поэтому реальный деплой возможен после добавления их
