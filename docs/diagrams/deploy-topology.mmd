@@ -1,0 +1,39 @@
+flowchart LR
+    subgraph dev["Рабочая машина"]
+        direction TB
+        wt["рабочее дерево<br/>git push"]
+    end
+
+    subgraph kvm["Машина деплоя (git pull + kube_ci)"]
+        direction TB
+        pull["pull_products.sh<br/>symlink apps/&lt;product&gt;"]
+        conv["00-build-deploy.sh<br/>werf converge"]
+        roll["03-rollback.sh<br/>helm rollback"]
+        dism["01-dissmiss.sh<br/>werf dismiss"]
+        pull --> conv
+    end
+
+    registry["registry<br/>registry-&lt;NODE_IP&gt;.nip.io"]
+
+    subgraph cluster["Кластер окружения ENVNAME (KUBECONTEXT)"]
+        direction TB
+        ing["ingress-nginx<br/>&lt;app&gt;-ENVNAME-&lt;NODE_IP&gt;.nip.io"]
+        subgraph ns["Неймспейс &lt;NAMESPACE&gt;-ENVNAME"]
+            direction TB
+            front["frontend Service"]
+            back["backend Service"]
+            pg["PostgreSQL"]
+            pga["pgAdmin"]
+            front --> back --> pg
+            pga --> pg
+        end
+        ing --> front
+        ing --> pga
+    end
+
+    wt -->|git push| kvm
+    conv -->|push образов| registry
+    conv -->|релиз helm| ns
+    roll -->|откат ревизии релиза| ns
+    dism -->|снос релиза + неймспейса| ns
+    registry -->|pull образов| ns
