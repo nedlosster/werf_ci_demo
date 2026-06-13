@@ -11,13 +11,13 @@ CI-контур: React + Spring Boot (app1-java-react) и Angular + FastAPI
 
 ## Статьи
 
-- [overview.md](overview.md) -- обзор обоих продуктов и их сопоставление
-  (планируется).
-- [app1-java-react.md](app1-java-react.md) -- состав app1: React, Spring Boot,
-  PostgreSQL, pgAdmin (планируется).
-- [app2-python-angular.md](app2-python-angular.md) -- состав app2: Angular,
-  FastAPI, PostgreSQL, pgAdmin (планируется).
-- [postgres-and-init.md](postgres-and-init.md) -- PostgreSQL в продуктах и
-  инициализация схемы (планируется).
-- [pgadmin.md](pgadmin.md) -- pgAdmin как вспомогательный сервис продукта
-  (планируется).
+- [overview.md](overview.md) -- обзор обоих продуктов, сопоставление стеков и
+  что у них общее.
+- [app1-java-react.md](app1-java-react.md) -- состав и сборка app1: Spring Boot,
+  React + Vite, dev/prod-образы, описание в werf.yaml.
+- [app2-python-angular.md](app2-python-angular.md) -- состав и сборка app2:
+  FastAPI, Angular, dev/prod-образы, описание в werf.yaml.
+- [postgres-and-init.md](postgres-and-init.md) -- PostgreSQL как StatefulSet и
+  инициализация схемы из init.sql (без миграторов).
+- [pgadmin.md](pgadmin.md) -- pgAdmin как вспомогательный сервис: подключение к
+  базе, доступ через Ingress, только в dev.
