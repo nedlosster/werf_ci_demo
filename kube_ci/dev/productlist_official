@@ -1,0 +1,12 @@
+# Шаблон. Скопируйте в ./productlist и при необходимости отредактируйте.
+# Формат: [<product>]=<env>, где <product> -- каталог в ../../apps,
+# а <env> -- имя shell-функции в .helm/def.sh продукта (здесь -- dev).
+
+#!/bin/bash
+
+declare -A PRODUCTS
+
+PRODUCTS=(
+    [cmdb-web]=dev
+    [asset-svc]=dev
+)
