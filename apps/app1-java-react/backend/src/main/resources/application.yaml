@@ -14,6 +14,10 @@ management:
 spring:
   application:
     name: app1-java-react-backend
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:app1}
+    username: ${DB_USER:app1}
+    password: ${DB_PASSWORD:app1pass}
 
 # version подставляется Maven resource-filtering из <version> pom.xml
 app:
