@@ -158,7 +158,7 @@ body { font-family: 'DejaVu Sans', Arial, sans-serif; text-align: center; paddin
 <body>
 <div class="title">${TITLE}</div>
 <div class="subtitle">${SUBTITLE}</div>
-<div class="date">Дата генерации: ${date}</div>
+<div class="date">Дата: ${date}</div>
 </body>
 </html>
 TITLEHTML
