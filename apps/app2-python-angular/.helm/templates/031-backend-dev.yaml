@@ -1,0 +1,81 @@
+{{- if eq .Values.env "dev" }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: app2-python-angular-backend
+  labels:
+    {{- include "app2.labels" . | nindent 4 }}
+spec:
+  selector:
+    app.kubernetes.io/name: {{ include "app2.name" . }}
+    component: backend
+  ports:
+    - port: {{ .Values.backend.port }}
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: app2-python-angular-backend-dev
+  labels:
+    {{- include "app2.labels" . | nindent 4 }}
+spec:
+  serviceName: app2-python-angular-backend
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "app2.name" . }}
+      component: backend
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "app2.name" . }}
+        component: backend
+    spec:
+      securityContext:
+        fsGroup: 10001
+      initContainers:
+        - name: prepare-dev-env
+          image: {{ index .Values.werf.image "backend-dev" }}
+          command: ["sh", "-c", "cd /home/app/prepare-scripts && sudo ./init-dev-env.sh"]
+          volumeMounts:
+            - { name: workspace, mountPath: /workspace }
+            - { name: homeapp, mountPath: /home/app/homeapp }
+            - { name: id-rsa-vcs, mountPath: /home/app/.ssh/id_rsa, subPath: id_rsa }
+      containers:
+        - name: backend
+          image: {{ index .Values.werf.image "backend-dev" }}
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: app2-python-angular-config
+            - secretRef:
+                name: app2-python-angular-secrets
+          volumeMounts:
+            - { name: workspace, mountPath: /workspace }
+            - { name: homeapp, mountPath: /home/app/homeapp }
+            - { name: id-rsa-vcs, mountPath: /home/app/.ssh/id_rsa, subPath: id_rsa }
+      volumes:
+        - name: id-rsa-vcs
+          secret:
+            secretName: id-rsa-vcs
+            defaultMode: 0600
+  volumeClaimTemplates:
+    - metadata:
+        name: workspace
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: {{ .Values.dev.storageClass }}
+        resources:
+          requests:
+            storage: {{ .Values.dev.workspaceSize }}
+    - metadata:
+        name: homeapp
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: {{ .Values.dev.storageClass }}
+        resources:
+          requests:
+            storage: {{ .Values.dev.homeappSize }}
+{{- end }}

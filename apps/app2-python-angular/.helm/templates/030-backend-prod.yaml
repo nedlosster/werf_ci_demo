@@ -1,0 +1,56 @@
+{{- if ne .Values.env "dev" }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: app2-python-angular-backend
+  labels:
+    {{- include "app2.labels" . | nindent 4 }}
+spec:
+  selector:
+    app.kubernetes.io/name: {{ include "app2.name" . }}
+    component: backend
+  ports:
+    - port: {{ .Values.backend.port }}
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app2-python-angular-backend
+  labels:
+    {{- include "app2.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.backend.replicas }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "app2.name" . }}
+      component: backend
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "app2.name" . }}
+        component: backend
+    spec:
+      containers:
+        - name: backend
+          image: {{ index .Values.werf.image "backend" }}
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: app2-python-angular-config
+            - secretRef:
+                name: app2-python-angular-secrets
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 15
+{{- end }}

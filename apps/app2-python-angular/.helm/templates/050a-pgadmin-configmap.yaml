@@ -1,0 +1,23 @@
+{{- if .Values.pgadmin.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app2-python-angular-pgadmin-servers
+  labels:
+    {{- include "app2.labels" . | nindent 4 }}
+data:
+  servers.json: |
+    {
+      "Servers": {
+        "1": {
+          "Name": "app2-python-angular",
+          "Group": "Servers",
+          "Host": "app2-python-angular-postgres",
+          "Port": {{ .Values.postgres.port }},
+          "MaintenanceDB": {{ .Values.postgres.database | quote }},
+          "Username": {{ .Values.postgres.user | quote }},
+          "SSLMode": "prefer"
+        }
+      }
+    }
+{{- end }}

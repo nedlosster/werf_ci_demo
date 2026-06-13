@@ -1,0 +1,66 @@
+{{- if .Values.pgadmin.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: app2-python-angular-pgadmin
+  labels:
+    {{- include "app2.labels" . | nindent 4 }}
+spec:
+  selector:
+    app.kubernetes.io/name: {{ include "app2.name" . }}
+    component: pgadmin
+  ports:
+    - port: 80
+      targetPort: 80
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app2-python-angular-pgadmin
+  labels:
+    {{- include "app2.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "app2.name" . }}
+      component: pgadmin
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "app2.name" . }}
+        component: pgadmin
+    spec:
+      securityContext:
+        fsGroup: 5050
+      containers:
+        - name: pgadmin
+          image: {{ .Values.pgadmin.image }}
+          ports:
+            - containerPort: 80
+          env:
+            - name: PGADMIN_DEFAULT_EMAIL
+              valueFrom:
+                secretKeyRef:
+                  name: app2-python-angular-pgadmin-secrets
+                  key: PGADMIN_DEFAULT_EMAIL
+            - name: PGADMIN_DEFAULT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app2-python-angular-pgadmin-secrets
+                  key: PGADMIN_DEFAULT_PASSWORD
+            - name: PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED
+              value: "False"
+            - name: SCRIPT_NAME
+              value: /pgadmin
+          volumeMounts:
+            - name: servers
+              mountPath: /pgadmin4/servers.json
+              subPath: servers.json
+      volumes:
+        - name: servers
+          configMap:
+            name: app2-python-angular-pgadmin-servers
+{{- end }}

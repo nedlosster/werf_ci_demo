@@ -1,0 +1,8 @@
+env: prod
+domain: app2-python-angular-prod-192.168.125.31.nip.io
+backend:
+  replicas: 2
+frontend:
+  replicas: 2
+pgadmin:
+  enabled: false

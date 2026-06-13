@@ -1,0 +1,25 @@
+# syntax=docker/dockerfile:1
+# dev-образ бекенда app2-python-angular: полный python, спит в кластере.
+# Исходники клонируются в /workspace (PVC); кеш pip (~/.cache) и .vscode-server
+# через симлинки в /home/app/homeapp (PVC). Контекст сборки -- корень продукта.
+FROM python:3.12
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends git openssh-client sudo procps ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN useradd -m -u 10001 -s /bin/bash app && \
+    echo "app ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/app && chmod 0440 /etc/sudoers.d/app
+
+USER app
+WORKDIR /home/app
+
+RUN mkdir -p /home/app/homeapp/.cache /home/app/homeapp/.vscode-server /home/app/homeapp/.config && \
+    ln -sfn /home/app/homeapp/.cache /home/app/.cache && \
+    ln -sfn /home/app/homeapp/.vscode-server /home/app/.vscode-server && \
+    ln -sfn /home/app/homeapp/.config /home/app/.config
+
+COPY --chown=app:app install/prepare-scripts /home/app/prepare-scripts
+
+EXPOSE 8080
+ENTRYPOINT ["/bin/sleep", "infinity"]

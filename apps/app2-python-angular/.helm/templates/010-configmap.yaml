@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app2-python-angular-config
+  labels:
+    {{- include "app2.labels" . | nindent 4 }}
+data:
+  APP_ENV: {{ .Values.env | quote }}
+  DB_HOST: app2-python-angular-postgres
+  DB_PORT: {{ .Values.postgres.port | quote }}
+  DB_NAME: {{ .Values.postgres.database | quote }}
+  DB_USER: {{ .Values.postgres.user | quote }}
