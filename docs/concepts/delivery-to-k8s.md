@@ -1,0 +1,122 @@
+# Доставка в Kubernetes
+
+Это демо показывает одну модель доставки: единый контур `kube_ci` ставит
+разнородные по стеку продукты в уже развёрнутые кластеры двух окружений (dev и
+prod) по общему контракту `.helm/def.sh`. Кластеры в скоп демо не входят -- они
+считаются готовыми (требования к ним -- в
+[../kubernetes/requirements.md](../kubernetes/requirements.md)). Контур не знает
+внутренностей продукта: он работает только с контрактом, поэтому Java/React и
+Python/Angular деплоятся одним и тем же кодом. Эта статья проходит весь поток
+доставки -- от подготовки продуктов до применения релиза -- и описывает три
+базовые операции: публикацию, откат и очистку. Устройство самого werf разобрано
+в [Введении в werf](werf-intro.md).
+
+## Контракт вместо знания о продукте
+
+`kube_ci` не содержит ничего специфичного для конкретного приложения. Всё, что
+ему нужно знать, продукт сообщает через файл `.helm/def.sh` -- набор
+shell-функций по одной на окружение. Имя функции совпадает со значением в
+`productlist` окружения. Функция экспортирует переменные, которые контур
+прокидывает в werf: обязательные `APPNAME`, `ENVNAME`, `CI_URL`, опциональный
+`NAMESPACE` и любые `CI_*`. Релиз разворачивается в неймспейс
+`<NAMESPACE>-<ENVNAME>`, поэтому одно приложение в dev и prod не конфликтует
+даже на одном кластере. Полное описание контракта -- в
+[../../apps/README.md](../../apps/README.md).
+
+Благодаря контракту добавление продукта не меняет код `kube_ci`: достаточно
+положить корректный `.helm/` и вписать продукт в `productlist`. Та же
+развязка позволяет окружениям отличаться только параметрами кластера в
+`<env>/k8s_defs`, не трогая логику доставки.
+
+## Шаг 1: pull_products.sh
+
+Поток начинается с подготовки продуктов. В демо исходники лежат в репозитории,
+рядом, в каталоге `apps/`, а не клонируются из git. Скрипт
+[`pull_products.sh`](../../kube_ci/dev/pull_products.sh) создаёт в каталоге
+окружения подкаталог `products/` и связывает в него каждый продукт из
+`productlist` symlink'ом на `apps/<product>`. Так converge работает с продуктом
+по локальному пути, как если бы тот был склонирован. В реальном CI этот шаг
+заменяется на `git clone` или submodule -- см.
+[../integrations/gitlab-ci.md](../integrations/gitlab-ci.md).
+
+## Шаг 2: 00-build-deploy.sh
+
+Публикацию запускает [`00-build-deploy.sh`](../../kube_ci/dev/00-build-deploy.sh)
+из каталога окружения. Без аргументов или с `--all` он деплоит все продукты из
+`productlist`, иначе -- только перечисленные. Скрипт подключает библиотеку
+converge, читает `productlist` и `k8s_defs` окружения, экспортирует параметры
+кластера (`REGISTRY`, `KUBECONTEXT`, `KUBECONFIG`) и для каждого выбранного
+продукта заходит в его каталог и вызывает `deploy <env-функция>`.
+
+## Шаг 3: deploy() в 03-werf-converge.sh
+
+Вся работа с werf сосредоточена в функции `deploy()` из
+[`utils/03-werf-converge.sh`](../../kube_ci/utils/03-werf-converge.sh). Её шаги:
+
+- активирует werf через trdl (`trdl use werf 2 stable`) и подключает контракт
+  продукта (`source .helm/def.sh`);
+- вызывает env-функцию окружения; если `NAMESPACE` пуст, берёт `APPNAME`;
+- при наличии `.helm/predeploy.sh` запускает его до converge -- хук должен
+  отработать раньше, потому что werf читает `.helm/tmp/` при рендере секрета
+  (на этом построена dev-инъекция ssh-ключа, см.
+  [компромиссы схемы](security-and-tradeoffs.md));
+- задаёт `WERF_REPO="$REGISTRY/$APPNAME"` -- адрес репозитория образов продукта;
+- вычисляет целевой неймспейс `<NAMESPACE>-<ENVNAME>`;
+- подхватывает `.helm/values-<ENVNAME>.yaml` (`--values`) и
+  `.helm/secrets-<ENVNAME>.yaml` (`--secret-values`), если они есть;
+- собирает из `def.sh` все `CI_*`-переменные (кроме `CI_TAG`) и пробрасывает их
+  в helm через `--set` в нижнем регистре;
+- если задан `CI_TAG`, добавляет version-тег образов
+  `--use-custom-tag=%image%-$CI_TAG` (источник версии -- файл `VERSION`
+  продукта, см. [../delivery/versioning.md](../delivery/versioning.md)).
+
+Затем выполняется сам converge:
+
+```
+werf converge \
+  --dev --env=$ENVNAME --synchronization :local \
+  --insecure-registry=true --skip-tls-verify-registry=true \
+  --atomic --timeout=300 --namespace=$NAMESPACE-$ENVNAME \
+  $values_param $secret_values_param $custom_tag_param \
+  --loose-giterminism=true $ci_values --set APPNAME=... --set DOMAIN=...
+```
+
+После converge, если есть `.helm/postdeploy.sh`, запускается он -- обычно для
+печати URL развёрнутых ресурсов (фронт, бек, swagger, pgAdmin). Завершается
+`deploy()` переключением текущего kube-контекста на неймспейс продукта, чтобы
+последующие `kubectl` работали в нужном пространстве. Флаги
+`--insecure-registry`, `--skip-tls-verify-registry` и `--loose-giterminism`
+здесь -- осознанные послабления демо, разобранные в
+[компромиссах схемы](security-and-tradeoffs.md).
+
+## Три базовые операции
+
+Доставка сводится к трём операциям, каждая запускается из каталога окружения
+`kube_ci/dev|prod/`.
+
+Публикация -- `./pull_products.sh && ./00-build-deploy.sh [--all|<product>]`.
+Собирает образы и применяет релиз через converge, как описано выше.
+
+Откат -- `./01-dissmiss.sh <product>|--all`. Под капотом
+[`utils/04-dissmiss.sh`](../../kube_ci/utils/04-dissmiss.sh) подключает контракт,
+вызывает env-функцию и выполняет `werf dismiss --with-namespace`, снося релиз
+вместе с его неймспейсом. Без аргумента скрипт отказывается работать, чтобы
+случайный запуск не снёс всё.
+
+Очистка -- `./02-purge-stages.sh`. Сбрасывает локальный кеш стадий сборки
+(`werf stages purge`), освобождая место и заставляя следующую сборку идти с
+нуля.
+
+Подробные пошаговые сценарии этих операций -- в
+[../runbooks/](../runbooks/README.md); рабочая часть поставки (модель окружений,
+секреты, версии) -- в разделе [../delivery/](../delivery/README.md).
+
+## Связанные статьи
+
+- [Введение в werf](werf-intro.md)
+- [werf против альтернатив](werf-vs-alternatives.md)
+- [Компромиссы и безопасность схемы](security-and-tradeoffs.md)
+- [Контракт продукта (apps/README.md)](../../apps/README.md)
+- [Поставка через kube_ci](../delivery/README.md)
+- [Требования к кластеру](../kubernetes/requirements.md)
+- [Подключение к GitLab CI](../integrations/gitlab-ci.md)
