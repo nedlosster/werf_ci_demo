@@ -36,7 +36,7 @@ apps/<product>/
 окружения в `productlist` (`[<product>]=<env>`). Функция экспортирует
 переменные, которые `utils/03-werf-converge.sh` прокидывает в werf:
 
-Одна функция на окружение (dev/stage/prod). Имя функции -- значение в
+Одна функция на окружение (dev/prod). Имя функции -- значение в
 `productlist` соответствующего окружения:
 
 ```bash
@@ -49,13 +49,12 @@ dev() {
     # любые CI_* переменные пробрасываются в helm через --set (в нижнем регистре)
 }
 
-stage() { dev; export ENVNAME=stage; export CI_URL=cmdb-web-stage-192.168.125.31.nip.io; }
-prod()  { dev; export ENVNAME=prod;  export CI_URL=cmdb-web-prod-192.168.125.31.nip.io;  }
+prod() { dev; export ENVNAME=prod; export CI_URL=cmdb-web-prod-192.168.125.31.nip.io; }
 ```
 
 Минимально обязательны `APPNAME`, `ENVNAME`, `CI_URL`. Остальное -- опционально.
 Релиз разворачивается в неймспейс `<NAMESPACE>-<ENVNAME>`, поэтому одно
-приложение в трёх окружениях не конфликтует даже на одном кластере.
+приложение в обоих окружениях не конфликтует даже на одном кластере.
 
 Дополнительно `03-werf-converge.sh` подхватывает (если есть):
 `.helm/values-<ENVNAME>.yaml` (`--values`) и `.helm/secrets-<ENVNAME>.yaml`
@@ -64,5 +63,5 @@ prod()  { dev; export ENVNAME=prod;  export CI_URL=cmdb-web-prod-192.168.125.31.
 ## Подключение в окружении
 
 Продукт попадает в деплой через `productlist` окружения
-(`kube_ci/<env>/productlist`, где `<env>` -- dev/stage/prod), формат:
+(`kube_ci/<env>/productlist`, где `<env>` -- dev/prod), формат:
 `[<product>]=<env-функция>`. Шаблон -- `productlist_official`.

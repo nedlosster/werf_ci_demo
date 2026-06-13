@@ -30,17 +30,17 @@ GitLab Runner (executor `shell` или `docker` с привилегиями дл
 | `WERF_SECRET_KEY` | ключ расшифровки `secrets-<env>.yaml` (если используются) |
 
 `KUBECONFIG`/`WERF_SECRET_KEY` хранить как masked/protected. Контекст и адрес
-ноды задаются отдельно для каждого окружения (dev/stage/prod) -- через
+ноды задаются отдельно для каждого окружения (dev/prod) -- через
 environment-scoped переменные или `k8s_defs` соответствующего каталога.
 
 ## Маппинг операций на стадии
 
-Три окружения (dev/stage/prod) и три базовые операции kube_ci ложатся на стадии
-пайплайна. Типовой поток: автодеплой в `dev`, промоут в `stage`/`prod` вручную.
+Два окружения (dev/prod) и три базовые операции kube_ci ложатся на стадии
+пайплайна. Типовой поток: автодеплой в `dev`, промоут в `prod` вручную.
 
 | Операция kube_ci | Стадия GitLab |
 |---|---|
-| публикация (`00-build-deploy.sh`) | `deploy-dev` / `deploy-stage` / `deploy-prod` |
+| публикация (`00-build-deploy.sh`) | `deploy-dev` / `deploy-prod` |
 | откат (`01-dissmiss.sh`) | `rollback` (manual) |
 | очистка (`02-purge-stages.sh`) | `cleanup` (manual / scheduled) |
 
@@ -68,11 +68,6 @@ deploy-dev:
   variables: { ENV: dev }
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
-
-deploy-stage:
-  extends: .deploy
-  variables: { ENV: stage }
-  when: manual
 
 deploy-prod:
   extends: .deploy
