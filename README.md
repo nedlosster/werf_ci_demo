@@ -24,8 +24,8 @@
 
 | Продукт | Фронт | Бек | Хранилище |
 |---|---|---|---|
-| `cmdb-web` | React | Spring Boot (Java) | PostgreSQL + pgAdmin |
-| `asset-svc` | Angular | FastAPI (Python) | PostgreSQL + pgAdmin |
+| `app1-java-react` | React | Spring Boot (Java) | PostgreSQL + pgAdmin |
+| `app2-python-angular` | Angular | FastAPI (Python) | PostgreSQL + pgAdmin |
 
 Разные стеки специально: один CI-контур обслуживает оба продукта через единый
 контракт `.helm/def.sh` (см. [apps/README.md](apps/README.md)).

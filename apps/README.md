@@ -8,8 +8,8 @@
 
 | Каталог | Фронт | Бек | Хранилище |
 |---|---|---|---|
-| [cmdb-web](cmdb-web/) | React | Spring Boot (Java) | PostgreSQL + pgAdmin |
-| [asset-svc](asset-svc/) | Angular | FastAPI (Python) | PostgreSQL + pgAdmin |
+| [app1-java-react](app1-java-react/) | React | Spring Boot (Java) | PostgreSQL + pgAdmin |
+| [app2-python-angular](app2-python-angular/) | Angular | FastAPI (Python) | PostgreSQL + pgAdmin |
 
 ## Контракт продукта для kube_ci
 
@@ -42,14 +42,14 @@ apps/<product>/
 ```bash
 #!/bin/bash
 dev() {
-    export APPNAME=cmdb-web                              # имя приложения (репозиторий образа)
+    export APPNAME=app1-java-react                              # имя приложения (репозиторий образа)
     export ENVNAME=dev                                   # имя окружения
-    export NAMESPACE=cmdb-web                             # неймспейс (по умолчанию = APPNAME)
-    export CI_URL=cmdb-web-dev-192.168.125.31.nip.io     # хост для ingress (nip.io)
+    export NAMESPACE=app1-java-react                             # неймспейс (по умолчанию = APPNAME)
+    export CI_URL=app1-java-react-dev-192.168.125.31.nip.io     # хост для ingress (nip.io)
     # любые CI_* переменные пробрасываются в helm через --set (в нижнем регистре)
 }
 
-prod() { dev; export ENVNAME=prod; export CI_URL=cmdb-web-prod-192.168.125.31.nip.io; }
+prod() { dev; export ENVNAME=prod; export CI_URL=app1-java-react-prod-192.168.125.31.nip.io; }
 ```
 
 Минимально обязательны `APPNAME`, `ENVNAME`, `CI_URL`. Остальное -- опционально.

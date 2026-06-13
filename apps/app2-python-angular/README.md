@@ -1,4 +1,4 @@
-# asset-svc
+# app2-python-angular
 
 Демо-продукт уровня CMDB (второй стек).
 

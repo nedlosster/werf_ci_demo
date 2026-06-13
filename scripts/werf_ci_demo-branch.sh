@@ -43,13 +43,13 @@ usage() {
       Список worktree.
 
 Тип ветки: feature | fix | docs | refactor | test
-Пример: ./scripts/werf_ci_demo-branch.sh new feature/cmdb-web-helm
+Пример: ./scripts/werf_ci_demo-branch.sh new feature/app1-helm
 EOF
 }
 
 cmd_new() {
     local branch="${1:-}"
-    [[ -n "$branch" ]] || fail "не указан тип/название ветки (пример: feature/cmdb-web-helm)"
+    [[ -n "$branch" ]] || fail "не указан тип/название ветки (пример: feature/app1-helm)"
     [[ "$branch" =~ $VALID_RE ]] || \
         fail "имя '$branch' не по конвенции: <feature|fix|docs|refactor|test>/<латиница-через-дефис>"
 

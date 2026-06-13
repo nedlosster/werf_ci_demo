@@ -1,12 +1,12 @@
 flowchart LR
     subgraph apps["apps/ (исходники продуктов)"]
         direction TB
-        subgraph cmdbweb["cmdb-web"]
+        subgraph cmdbweb["app1-java-react"]
             cw_fe["frontend (React)"]
             cw_be["backend (Spring Boot)"]
             cw_helm[".helm/def.sh + werf.yaml"]
         end
-        subgraph assetsvc["asset-svc"]
+        subgraph assetsvc["app2-python-angular"]
             as_fe["frontend (Angular)"]
             as_be["backend (FastAPI)"]
             as_helm[".helm/def.sh + werf.yaml"]

@@ -1,0 +1,6 @@
+# Окружение dev: разработка внутри кластера (dev-поды sleep infinity + volumes),
+# pgAdmin включён, домен nip.io.
+env: dev
+domain: app1-java-react-dev-192.168.125.31.nip.io
+pgadmin:
+  enabled: true

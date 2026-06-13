@@ -1,0 +1,23 @@
+{{- if .Values.pgadmin.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app1-java-react-pgadmin-servers
+  labels:
+    {{- include "app1.labels" . | nindent 4 }}
+data:
+  servers.json: |
+    {
+      "Servers": {
+        "1": {
+          "Name": "app1-java-react",
+          "Group": "Servers",
+          "Host": "app1-java-react-postgres",
+          "Port": {{ .Values.postgres.port }},
+          "MaintenanceDB": {{ .Values.postgres.database | quote }},
+          "Username": {{ .Values.postgres.user | quote }},
+          "SSLMode": "prefer"
+        }
+      }
+    }
+{{- end }}

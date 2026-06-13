@@ -1,0 +1,56 @@
+{{- if ne .Values.env "dev" }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: app1-java-react-backend
+  labels:
+    {{- include "app1.labels" . | nindent 4 }}
+spec:
+  selector:
+    app.kubernetes.io/name: {{ include "app1.name" . }}
+    component: backend
+  ports:
+    - port: {{ .Values.backend.port }}
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app1-java-react-backend
+  labels:
+    {{- include "app1.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.backend.replicas }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "app1.name" . }}
+      component: backend
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "app1.name" . }}
+        component: backend
+    spec:
+      containers:
+        - name: backend
+          image: {{ index .Values.werf.image "backend" }}
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: app1-java-react-config
+            - secretRef:
+                name: app1-java-react-secrets
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 15
+{{- end }}

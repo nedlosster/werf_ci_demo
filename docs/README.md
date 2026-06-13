@@ -11,6 +11,8 @@
 - [gitlab-ci.md](gitlab-ci.md) -- подключение системы скриптов kube_ci к GitLab CI.
 - [versioning.md](versioning.md) -- схема единой версии (контейнеры/бек/фронт),
   памятка на основе respoolman.
+- [dev-in-cluster.md](dev-in-cluster.md) -- разработка внутри кластера: dev-поды
+  с persistent-volume'ами (исходники + кеши + vscode-server), VS Code Remote.
 
 ## Диаграммы
 
