@@ -4,6 +4,10 @@
 # env: dev | prod -- управляет рендером dev/prod-манифестов.
 env: prod
 
+# Секреты werf: переопределяются зашифрованным .helm/secrets-<env>.yaml
+# (--secret-values). Пусто -> чарт берёт демо-дефолты ниже. См. .helm/secrets/.
+secrets: {}
+
 domain: app1-java-react.local
 
 backend:

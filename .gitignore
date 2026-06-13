@@ -13,6 +13,12 @@ kube_ci/*/productlist
 # ssh-ключи dev-схемы (кладёт оператор)
 apps/*/.helm/tmp/
 
+# werf-секреты: ключ и plaintext-копии (зашифрованные secrets-<env>.yaml -- в git)
+.werf_secret_key
+apps/*/.werf_secret_key
+apps/*/.helm/secret-values.yaml
+apps/*/.helm/secrets/values.yaml
+
 # артефакты генерации (диаграммы рендерятся, PDF собираются по запросу)
 docs/pdf/
 

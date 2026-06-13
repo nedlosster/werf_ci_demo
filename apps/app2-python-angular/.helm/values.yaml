@@ -1,6 +1,10 @@
 # Дефолты (prod). Окружение переключается values-<env>.yaml по ENVNAME.
 env: prod
 
+# Секреты werf: переопределяются зашифрованным .helm/secrets-<env>.yaml
+# (--secret-values). Пусто -> чарт берёт демо-дефолты ниже. См. .helm/secrets/.
+secrets: {}
+
 domain: app2-python-angular.local
 
 backend:
