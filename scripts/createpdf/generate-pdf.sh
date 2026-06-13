@@ -125,6 +125,12 @@ create_combined_markdown() {
         log_info "  + $line"
     done < "$DOC_ORDER_FILE"
 
+    # Разрешение путей к изображениям. В склейке статьи лежат в docs/.combined-*.md,
+    # а pandoc запускается из docs/, поэтому относительные ссылки ../pics/ и pics/
+    # из статей указывают мимо docs/pics/. Переписываем их в абсолютный путь.
+    sed -i "s|](\.\./pics/|](${DOCS_DIR}/pics/|g" "$TEMP_FILE"
+    sed -i "s|](pics/|](${DOCS_DIR}/pics/|g" "$TEMP_FILE"
+
     # Удаление markdown-ссылок (но не изображений)
     local tmp="${TEMP_FILE}.cv"
     cp "$TEMP_FILE" "$tmp"
