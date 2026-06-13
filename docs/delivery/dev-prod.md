@@ -23,7 +23,7 @@
 | [`k8s_defs`](../../kube_ci/dev/k8s_defs) | параметры кластера: `REGISTRY`, `KUBECONTEXT`, `KUBECONFIG` |
 | [`productlist_official`](../../kube_ci/dev/productlist_official) | шаблон списка продуктов и их env-функций |
 | [`pull_products.sh`](../../kube_ci/dev/pull_products.sh) | связать `apps/<product>` symlink'ом в `products/` |
-| `00-build-deploy.sh`, `01-dissmiss.sh`, `02-purge-stages.sh` | точки входа трёх операций |
+| `00-build-deploy.sh`, `03-rollback.sh`, `01-dissmiss.sh`, `02-purge-stages.sh` | точки входа операций: публикация, откат версии, снос, очистка |
 
 Точки входа в обоих каталогах идентичны -- они лишь подключают общие функции из
 `utils/` и подмешивают локальные `k8s_defs` и `productlist`. Самодостаточность
@@ -95,7 +95,8 @@ KUBECONTEXT=${KUBECONTEXT:-k8sadmin-k8s-public-paas@service-k8s-public-paas}
 автоматически. Это эксплуатационное правило проекта, а не свойство скриптов:
 команды dev и prod идентичны, и ничто в коде не мешает выкатить в prod, поэтому
 ответственность за запуск prod-операций лежит на операторе. Пошаговый сценарий
-публикации и отката -- в [runbook деплоя](../runbooks/deploy.md).
+публикации -- в [runbook деплоя](../runbooks/deploy.md), отката версии -- в
+[runbook отката](../runbooks/rollback.md).
 
 ## Плюсы, минусы, безопасность
 
@@ -129,3 +130,4 @@ KUBECONTEXT=${KUBECONTEXT:-k8sadmin-k8s-public-paas@service-k8s-public-paas}
 - [Спецификации Kubernetes](../kubernetes/specifications.md)
 - [Контракт продукта (apps/README.md)](../../apps/README.md)
 - [Runbook деплоя](../runbooks/deploy.md)
+- [Runbook отката версии](../runbooks/rollback.md)
