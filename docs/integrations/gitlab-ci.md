@@ -1,5 +1,12 @@
 # Подключение системы скриптов к GitLab CI
 
+Статья показывает, как обернуть операции `kube_ci` в пайплайн GitLab CI. Это
+справочник: требования к раннеру, переменные CI/CD, маппинг трёх операций на
+стадии и рабочий `.gitlab-ci.yml`. Та же механика обёртки над bash-скриптами в
+другой CI-системе описана в [Подключении к Jenkins](jenkins.md); статью
+читать после раздела о самих операциях --
+[Операции kube_ci](../delivery/kube-ci-operations.md).
+
 kube_ci -- это набор bash-скриптов, которые запускаются вручную из каталога
 окружения. Те же скрипты можно вызывать из GitLab CI: пайплайн становится
 тонкой обёрткой над `00-build-deploy.sh` / `01-dissmiss.sh` / `02-purge-stages.sh`.
@@ -10,17 +17,17 @@ GitLab Runner (executor `shell` или `docker` с привилегиями дл
 котором доступны:
 
 - `docker` (сборка образов werf);
-- `werf` через `trdl` (`trdl use werf 2 stable`) -- см. [werf-intro.md](werf-intro.md);
+- `werf` через `trdl` (`trdl use werf 2 stable`) -- см. [werf-intro.md](../concepts/werf-intro.md);
 - `kubectl` и `helm`;
 - доступ к кластерам окружений и in-cluster registry -- см.
-  [k8s-requirements.md](k8s-requirements.md).
+  [requirements.md](../kubernetes/requirements.md).
 
 Раннер должен иметь сетевой доступ к кластеру и insecure-registry,
 аналогично рабочей машине.
 
 ## Переменные CI/CD
 
-В Settings → CI/CD → Variables проекта:
+В Settings -> CI/CD -> Variables проекта:
 
 | Переменная | Назначение |
 |---|---|
@@ -98,3 +105,34 @@ purge:
   значение передаётся через переменную (`$PRODUCT`), пустое приведёт к отказу.
 - Для werf-cleanup образов в registry по политикам (`werf.yaml: cleanup`)
   заводится отдельный scheduled-пайплайн с `werf cleanup`.
+
+## Плюсы, минусы, безопасность
+
+Плюсы. Пайплайн остаётся тонкой обёрткой: stage'ы вызывают те же три скрипта
+`kube_ci`, что и ручной запуск, поэтому поведение в CI и локально совпадает.
+Переезд между CI-системами не трогает логику доставки -- меняется только синтаксис
+`.gitlab-ci.yml`.
+
+Минусы. Раннер должен сам предоставить werf, доступ к registry и kubeconfig --
+часть среды живёт вне репозитория, и её рассинхрон проявляется на job-е. Откат
+завязан на ручную передачу `$PRODUCT`, пустое значение намеренно валит job, чтобы
+не снести лишнего.
+
+Безопасность. `WERF_SECRET_KEY` и kubeconfig подключаются только в stage'ах
+деплоя и хранятся masked/protected-переменными, а не в репозитории. Разбор
+хранения ключа и боевых послаблений -- в
+[Управлении секретами](../delivery/secrets.md) и
+[Компромиссах и безопасности схемы](../concepts/security-and-tradeoffs.md).
+
+## Связанные статьи
+
+- [Подключение к Jenkins](jenkins.md) -- та же обёртка над скриптами в другой
+  CI-системе.
+- [Метрики DORA](dora-metrics.md) -- какие сигналы поставки снимаются с job-ов
+  пайплайна.
+- [Операции kube_ci](../delivery/kube-ci-operations.md) -- что делают три
+  скрипта, которые вызывает пайплайн.
+- [Управление секретами](../delivery/secrets.md) -- ключ werf и хранение его как
+  masked/protected-переменной CI.
+- [Требования к Kubernetes-кластеру](../kubernetes/requirements.md) -- доступ
+  раннера к кластеру и insecure-registry.

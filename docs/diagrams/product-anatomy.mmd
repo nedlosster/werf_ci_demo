@@ -1,0 +1,43 @@
+flowchart TB
+    subgraph ns["Неймспейс &lt;app&gt;-&lt;env&gt;"]
+        direction TB
+        ingress["Ingress<br/>хост &lt;app&gt;-&lt;env&gt;-NODE.nip.io"]
+
+        subgraph front["Фронтенд"]
+            fe_svc["Service &lt;app&gt;-frontend"]
+            fe_dep["Deployment frontend<br/>(prod) / StatefulSet (dev)"]
+        end
+
+        subgraph back["Бэкенд"]
+            be_svc["Service &lt;app&gt;-backend"]
+            be_dep["Deployment backend<br/>(prod) / StatefulSet (dev)"]
+        end
+
+        subgraph db["БД"]
+            pg_svc["Service &lt;app&gt;-postgres"]
+            pg_set["StatefulSet PostgreSQL 16<br/>PVC data 5Gi"]
+        end
+
+        subgraph admin["pgAdmin (dev)"]
+            pa_svc["Service &lt;app&gt;-pgadmin"]
+            pa_dep["Deployment pgAdmin"]
+        end
+
+        cm["ConfigMap<br/>APP_ENV, DB_HOST, DB_NAME"]
+        secret["Secret (werf secret)<br/>DB_PASSWORD"]
+        dbinit["ConfigMap db-init<br/>init.sql"]
+    end
+
+    ingress -->|/| fe_svc
+    ingress -->|/api| be_svc
+    ingress -->|/pgadmin| pa_svc
+    fe_svc --> fe_dep
+    be_svc --> be_dep
+    pg_svc --> pg_set
+    pa_svc --> pa_dep
+    be_dep --> pg_svc
+    pa_dep --> pg_svc
+    cm --> be_dep
+    secret --> be_dep
+    secret --> pg_set
+    dbinit --> pg_set

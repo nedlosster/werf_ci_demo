@@ -16,7 +16,7 @@
 
 | Каталог | Назначение |
 |---|---|
-| `apps/` | демо-продукты (исходники, заготовки на этом этапе) |
+| `apps/` | демо-продукты: исходники, `Dockerfile`, `werf.yaml`, `.helm/`-чарты |
 | `kube_ci/` | адаптированная копия оркестрации werf-деплоя |
 | `docs/` | документация и runbook'и |
 
@@ -42,10 +42,32 @@
 | Очистка (сброс кеша сборки) | `./02-purge-stages.sh` |
 
 Полный сценарий -- [docs/runbooks/deploy.md](docs/runbooks/deploy.md).
-Требования к кластеру -- [docs/k8s-requirements.md](docs/k8s-requirements.md).
+Требования к кластеру -- [docs/kubernetes/requirements.md](docs/kubernetes/requirements.md).
 
-## Статус
+## Документация
 
-Этап 1 -- каркас репозитория и адаптированная оркестрация. Исходный код
-продуктов и их `.helm/`-чарты создаются на следующем этапе (см.
-[apps/README.md](apps/README.md)).
+Документация разбита на тематические разделы; индекс и путь чтения -- в
+[docs/README.md](docs/README.md).
+
+| Раздел | Содержимое |
+|---|---|
+| [docs/concepts/](docs/concepts/README.md) | werf, сравнение с альтернативами, модель доставки, компромиссы |
+| [docs/kubernetes/](docs/kubernetes/README.md) | требования к кластеру, спецификации объектов, ingress |
+| [docs/products/](docs/products/README.md) | состав двух продуктов, PostgreSQL, pgAdmin |
+| [docs/delivery/](docs/delivery/README.md) | окружения dev/prod, операции kube_ci, секреты, версии |
+| [docs/integrations/](docs/integrations/README.md) | GitLab CI, Jenkins, метрики DORA |
+| [docs/runbooks/](docs/runbooks/README.md) | пошаговые сценарии эксплуатации |
+| [docs/demo/](docs/demo/README.md) | план доклада и банк вопросов |
+
+Справочные материалы: [docs/glossary.md](docs/glossary.md) -- термины контура,
+[docs/resources.md](docs/resources.md) -- внешние ресурсы.
+
+## Состояние
+
+Репозиторий содержит работающую оркестрацию и оба продукта целиком: исходники,
+`Dockerfile`/`Dockerfile.dev`, `werf.yaml`, `.helm/`-чарты (ingress, pgAdmin,
+db-init-configmap, backend/frontend в dev- и prod-формах, secret), файлы версии
+и `set-version.sh`. Демонстрационной остаётся только бизнес-логика фронта и
+бэкенда -- продукты служат носителями стека и контракта. Вне скоупа демо --
+разворачивание самих кластеров (они считаются готовыми) и реальная продуктовая
+функциональность.

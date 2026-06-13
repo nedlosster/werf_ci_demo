@@ -1,8 +1,11 @@
 # apps -- демо-продукты
 
 Каждый подкаталог -- отдельный продукт, который kube_ci собирает и деплоит
-независимо. На этапе 1 здесь только заготовки; исходный код, `Dockerfile` и
-`.helm/`-чарты добавляются на следующем этапе.
+независимо. У каждого продукта есть исходники фронта и бэкенда,
+`Dockerfile`/`Dockerfile.dev`, `werf.yaml` и `.helm/`-чарт (templates: ingress,
+pgAdmin, db-init-configmap, backend/frontend в dev- и prod-формах, secret),
+файл `VERSION` и `scripts/set-version.sh`. Демонстрационна только бизнес-логика
+приложений -- продукты служат носителями стека и контракта.
 
 ## Продукты
 
@@ -45,11 +48,11 @@ dev() {
     export APPNAME=app1-java-react                              # имя приложения (репозиторий образа)
     export ENVNAME=dev                                   # имя окружения
     export NAMESPACE=app1-java-react                             # неймспейс (по умолчанию = APPNAME)
-    export CI_URL=app1-java-react-dev-192.168.125.31.nip.io     # хост для ingress (nip.io)
+    export CI_URL=app1-java-react-dev-192.168.123.31.nip.io     # хост для ingress (nip.io)
     # любые CI_* переменные пробрасываются в helm через --set (в нижнем регистре)
 }
 
-prod() { dev; export ENVNAME=prod; export CI_URL=app1-java-react-prod-192.168.125.31.nip.io; }
+prod() { dev; export ENVNAME=prod; export CI_URL=app1-java-react-prod-192.168.123.31.nip.io; }
 ```
 
 Минимально обязательны `APPNAME`, `ENVNAME`, `CI_URL`. Остальное -- опционально.
