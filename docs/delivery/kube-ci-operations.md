@@ -50,6 +50,13 @@ converge` -- одной командой собирает образы, публ
 секреты окружения подмешиваются по ключу werf, см.
 [Управление секретами](secrets.md).
 
+Один запуск проходит так: инженер или CI вызывает `pull_products` и
+`00-build-deploy`, контур читает контракт и передаёт управление werf, werf
+собирает образы, кладёт их в registry, рендерит чарт и применяет манифесты через
+Kubernetes API, после чего postdeploy печатает URL ресурсов.
+
+![Поток werf converge: участники Engineer/CI, kube_ci, werf, registry, Kubernetes API](../pics/converge-flow.png)
+
 ## Откат (dismiss)
 
 [`01-dissmiss.sh`](../../kube_ci/dev/01-dissmiss.sh) снимает релиз. Под капотом

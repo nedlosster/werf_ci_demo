@@ -1,0 +1,18 @@
+sequenceDiagram
+    actor eng as Engineer / CI
+    participant kc as kube_ci<br/>(00-build-deploy / utils)
+    participant werf as werf
+    participant reg as registry
+    participant k8s as Kubernetes API
+
+    eng->>kc: pull_products.sh (symlink apps/<product>)
+    eng->>kc: 00-build-deploy.sh [--all|<product>]
+    kc->>kc: source .helm/def.sh, env-функция окружения
+    kc->>werf: trdl use werf 2 stable, werf converge
+    werf->>werf: werf build (стадии)
+    werf->>reg: push образов в $REGISTRY/$APPNAME
+    werf->>werf: werf release (helm рендер чарта)
+    werf->>k8s: применение манифестов (--namespace <app>-<env>)
+    k8s-->>werf: статус ресурсов (--atomic)
+    werf-->>kc: результат converge
+    kc-->>eng: postdeploy: URL (CI_URL, pgAdmin)

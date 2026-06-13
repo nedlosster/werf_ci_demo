@@ -1,0 +1,36 @@
+flowchart LR
+    subgraph vcs["VCS"]
+        gitlab["GitLab<br/>(репозиторий, коммиты, VERSION)"]
+    end
+
+    subgraph runners["CI-раннеры"]
+        direction TB
+        glci["GitLab CI<br/>job: deploy-dev / deploy-prod / rollback"]
+        jenkins["Jenkins<br/>stage: Deploy dev / Deploy prod"]
+    end
+
+    subgraph kubeci["kube_ci (контур доставки)"]
+        direction TB
+        pull["pull_products.sh<br/>(symlink / git clone в CI)"]
+        build["00-build-deploy.sh<br/>+ k8s_defs, productlist"]
+        converge["werf converge<br/>(utils/03-werf-converge.sh)"]
+        pull --> build --> converge
+    end
+
+    registry["registry<br/>registry-NODE.nip.io"]
+
+    subgraph clusters["Кластеры окружений"]
+        direction TB
+        cdev["dev: ns <app>-dev"]
+        cprod["prod: ns <app>-prod"]
+    end
+
+    gitlab --> glci
+    gitlab --> jenkins
+    glci --> pull
+    jenkins --> pull
+    converge -->|push образов| registry
+    converge -->|релиз helm| cdev
+    converge -->|релиз helm| cprod
+    registry --> cdev
+    registry --> cprod

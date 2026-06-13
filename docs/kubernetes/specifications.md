@@ -56,6 +56,13 @@ converge скрипт переключает текущий контекст kub
 продукта объекты различаются по метке `component` (postgres / backend / frontend
 / pgadmin).
 
+Объекты внутри неймспейса продукта связаны так: единый Ingress раскладывает
+трафик по пути на Service-ы фронта, бэкенда и pgAdmin; бэкенд и pgAdmin ходят в
+PostgreSQL; ConfigMap и Secret отдают env бэкенду и базе, а ConfigMap db-init
+подаёт первичную схему.
+
+![Анатомия продукта в неймспейсе app-env: Deployment-ы фронта и бэкенда, PostgreSQL, pgAdmin, Service-ы, Ingress, Secret, ConfigMap db-init](../pics/product-anatomy.png)
+
 PostgreSQL всегда идёт StatefulSet с `volumeClaimTemplates` (том `data`,
 `ReadWriteOnce`, storageClass `standard`) и readiness-пробой `pg_isready`. Пароль
 БД берётся из Secret `<app>-secrets`; init-скрипт первичной схемы подаётся через
