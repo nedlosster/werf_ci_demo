@@ -113,6 +113,24 @@ storageClass правятся в [`values.yaml`](../../apps/app1-java-react/.hel
 registry и insecure-доступа -- в [requirements.md](requirements.md);
 версионирование тегов -- в [../delivery/versioning.md](../delivery/versioning.md).
 
+## Плюсы, минусы, безопасность
+
+Плюсы. Все объекты продукта (configmap, secret, postgres, backend/frontend в
+dev- и prod-формах, pgAdmin, db-init-configmap, ingress) описаны одним чартом и
+переключаются между окружениями значениями `values-<env>.yaml`, без отдельных
+наборов манифестов. werf сам подставляет адреса собранных образов через
+`.Values.werf.image`.
+
+Минусы. dev и prod различаются формой объектов (dev-поды против prod-деплоев),
+поэтому изменение, проверенное в dev, не покрывает автоматически prod-ветку
+шаблона. Чарты не задают `requests`/`limits` -- ресурсная изоляция держится на
+дефолтах кластера.
+
+Безопасность. Образы публикуются в in-cluster registry на nip.io с
+insecure-послаблениями, а `secret`-объект в демо хранит данные открыто. Разбор
+послаблений registry и боевых альтернатив -- в
+[Компромиссах и безопасности схемы](../concepts/security-and-tradeoffs.md).
+
 ## Связанные статьи
 
 - [requirements.md](requirements.md) -- кластер, registry на nip.io,
