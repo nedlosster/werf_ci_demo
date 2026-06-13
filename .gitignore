@@ -1,0 +1,17 @@
+# CLAUDE.md -- оригинал в claude-rules, здесь symlink
+/CLAUDE.md
+
+# окружения kube_ci: продукты подтягиваются локально, конфиг -- локальный
+kube_ci/*/products
+kube_ci/*/products/*
+kube_ci/*/productlist
+*.log
+
+# werf
+.werf-*
+
+# IDE / ОС
+.idea/
+.vscode/
+*.swp
+.DS_Store
