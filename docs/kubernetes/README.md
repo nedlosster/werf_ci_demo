@@ -12,7 +12,7 @@
 
 - [requirements.md](requirements.md) -- требования к кластеру: топология,
   ingress, in-cluster registry через nip.io, insecure-доступ.
-- [specifications.md](specifications.md) -- параметры окружений dev/prod:
-  контекст, неймспейсы, реестр (планируется).
-- [ingress.md](ingress.md) -- организация ingress и маршрутизация к сервисам
-  продуктов (планируется).
+- [specifications.md](specifications.md) -- объекты чарта на продукт,
+  неймспейсы окружений, ресурсы, источник образов, различие dev vs prod.
+- [ingress.md](ingress.md) -- организация ingress, хосты nip.io и маршрутизация
+  к фронту, бэкенду и pgAdmin.
