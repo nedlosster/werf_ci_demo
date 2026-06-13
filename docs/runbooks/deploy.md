@@ -62,3 +62,14 @@ cd kube_ci/dev
 ```
 
 Полная очистка werf-кеша хоста и docker-образов -- `../utils/10-purge-werf-registry.sh`.
+
+## Связанные runbook'и
+
+- [cluster-connection.md](cluster-connection.md) -- подключение к кластеру,
+  kubeconfig, insecure-registry, переопределение под отдельный кластер.
+- [secrets-setup.md](secrets-setup.md) -- генерация ключа `WERF_SECRET_KEY`,
+  правка зашифрованных значений, ротация.
+- [first-deploy.md](first-deploy.md) -- первый деплой продукта с нуля,
+  end-to-end, с чеклистом проверки.
+- [troubleshooting.md](troubleshooting.md) -- разбор типовых сбоев: TLS/registry,
+  timeout, отсутствие ключа, ImagePullBackOff, init БД, ingress 404, контекст.
