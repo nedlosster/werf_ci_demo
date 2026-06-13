@@ -9,6 +9,13 @@
 - [k8s-requirements.md](k8s-requirements.md) -- требования к кластеру: топология,
   ingress, in-cluster registry через nip.io, insecure-доступ.
 - [gitlab-ci.md](gitlab-ci.md) -- подключение системы скриптов kube_ci к GitLab CI.
+- [versioning.md](versioning.md) -- схема единой версии (контейнеры/бек/фронт),
+  памятка на основе respoolman.
+
+## Диаграммы
+
+- [diagrams/architecture.mmd](diagrams/architecture.mmd) -- связка apps -> kube_ci
+  -> кластер (рендер: `scripts/diagrams/render-all.sh` -> `docs/pics/`).
 
 ## Runbook'и
 
