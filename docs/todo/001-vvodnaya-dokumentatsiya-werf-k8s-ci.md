@@ -175,10 +175,10 @@ docs/) выше. Зона записи -- только `/techwriter`.
 | Phase 5 | `delivery/`: `dev-prod` (один контур, два окружения по контракту); `kube-ci-operations` (публикация/откат/очистка, utils); `secrets` (werf secret, WERF_SECRET_KEY); `versioning` (дооформить перенесённый, единая VERSION->CI_TAG); `dev-in-cluster` (перенесён) | done | 2bccd18 |
 | Phase 6 | `integrations/`: `gitlab-ci` (дооформить перенесённый); `jenkins` (паритет, полноценный `Jenkinsfile`-пример); `dora-metrics` (4 метрики + где брать сигналы в этом контуре, без кода сбора) | done | 0b4f328 |
 | Phase 7 | `runbooks/`: `cluster-connection` (kubeconfig, k8s_defs, insecure-registry); `secrets-setup` (настройка и ротация); `first-deploy` (продукт с нуля end-to-end); `troubleshooting`; связать существующий `deploy.md` | done | 464d75c |
-| Phase 8 | `demo/`: `talk-plan-40min` (поминутная раскладка доклада, цели, тезисы); `qa-bank` (банк из 20 Q&A) | planned | - |
+| Phase 8 | `demo/`: `talk-plan-40min` (поминутная раскладка доклада, цели, тезисы); `qa-bank` (банк из 20 Q&A) | done | 96f6547 |
 | Phase 9 | Диаграммы Mermaid (`docs/diagrams/*.mmd` -> рендер в `docs/pics/` через `scripts/diagrams/render-all.sh`): `industrial-cicd` (встраивание в промышленный CI/CD), `converge-flow` (sequence), `product-anatomy` (анатомия продукта в кластере), `dora-flow`; врезать рендеры в соответствующие статьи | planned | - |
 | Phase 10 | Сервисные + сшивка: `glossary.md`, `resources.md`; обновить корневой `README.md` и `apps/README.md` под новую структуру (снять «этап 1/заготовки»); сквозные врезки «Плюсы/Минусы/Безопасность» в тематических статьях; финальная сверка перелинковки и `docs/README.md` | planned | - |
-| Phase 11 | Единый PDF всей документации (титул + оглавление + разделы по пути чтения, с диаграммами) навыком `/pdf` | planned | - |
+| Phase 11 | Экспорт в PDF навыком `/pdf` -- ДВА отдельных документа. (1) **Документация без демо**: вся документация в порядке пути чтения, титул + оглавление + разделы с врезкой диаграмм, БЕЗ раздела `demo/`. (2) **Демо**: материалы показа -- план доклада (`demo/talk-plan-40min`) + вспомогательные слайды + `qa-bank` как backup-слайды. Перед сборкой demo-PDF `/techwriter` создаёт `demo/slides.md` -- слайд-аутлайн по блокам доклада (один слайд = заголовок + 3-5 тезисов + ссылка на диаграмму/врезку), затем обновляет `demo/README.md` и путь чтения под новый файл. Оба PDF -- с титулом и оглавлением | planned | - |
 
 ## Реализация
 
