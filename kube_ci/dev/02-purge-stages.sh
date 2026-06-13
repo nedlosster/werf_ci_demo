@@ -14,5 +14,5 @@ echo "очистка stages по продуктам"
 
 for product in "${!PRODUCTS[@]}"
 do
-    [ -d "$product" ] && ( cd "$product" && purge_stages_local "${PRODUCTS[$product]}" )
+    [ -d "$product" ] && ( cd "$(readlink -f "$product")" && purge_stages_local "${PRODUCTS[$product]}" )
 done
