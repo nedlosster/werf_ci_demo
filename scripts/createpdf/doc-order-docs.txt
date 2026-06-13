@@ -7,6 +7,7 @@ README.md
 ## Концепции
 concepts/README.md
 concepts/werf-intro.md
+concepts/werf-install.md
 concepts/werf-vs-alternatives.md
 concepts/delivery-to-k8s.md
 concepts/security-and-tradeoffs.md
