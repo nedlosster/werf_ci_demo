@@ -1,6 +1,6 @@
 ---
 title: "Вводная документация по контуру werf+k8s CI"
-status: resolved
+status: done
 created: 2026-06-13
 last-updated: 2026-06-13
 ---
@@ -189,4 +189,11 @@ docs/) выше. Зона записи -- только `/techwriter`.
 
 ## Реализация
 
-_Заполняется при `/todo done NNN`._
+2026-06-13: ветка `docs/vvodnaya-dokumentatsiya-werf-k8s-ci` слита в `main`
+(merge `33fb37e`). Реализован полный объём: тематические папки docs/
+(concepts, kubernetes, products, delivery, integrations, runbooks, demo) с
+README-индексами, статьи-эссе и reference, 4 новые диаграммы + рендеры,
+glossary/resources, обновлённые корневой README и apps/README, два PDF
+(документация и демо). Постфикс: на титульном листе PDF убрана
+маркер-подпись даты (правка `scripts/createpdf/generate-pdf.sh` и
+глобального шаблона навыка pdf).
