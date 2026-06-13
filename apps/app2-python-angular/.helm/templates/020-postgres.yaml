@@ -51,11 +51,17 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /var/lib/postgresql/data
+            - name: db-init
+              mountPath: /docker-entrypoint-initdb.d
           readinessProbe:
             exec:
               command: ["pg_isready", "-U", {{ .Values.postgres.user | quote }}]
             initialDelaySeconds: 5
             periodSeconds: 10
+      volumes:
+        - name: db-init
+          configMap:
+            name: app2-python-angular-db-init
   volumeClaimTemplates:
     - metadata:
         name: data
