@@ -135,7 +135,6 @@
 | [docs/delivery/](docs/delivery/README.md) | окружения dev/prod, операции kube_ci, секреты, версии |
 | [docs/integrations/](docs/integrations/README.md) | GitLab CI, Jenkins, метрики DORA |
 | [docs/runbooks/](docs/runbooks/README.md) | пошаговые сценарии эксплуатации |
-| [docs/demo/](docs/demo/README.md) | план доклада и банк вопросов |
 
 Справочные материалы: [docs/glossary.md](docs/glossary.md) -- термины контура,
 [docs/resources.md](docs/resources.md) -- внешние ресурсы.
