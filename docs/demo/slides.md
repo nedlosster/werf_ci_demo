@@ -96,7 +96,7 @@ backup-слайды из [банка вопросов](qa-bank.md), которы
 
 - публикация: `./pull_products.sh && ./00-build-deploy.sh [--all|<product>]`
 - откат версии: `./03-rollback.sh <product> [revision]`, `helm rollback`
-- снос: `./01-dissmiss.sh <product>|--all`, без аргумента отказывается
+- снос: `./01-dismiss.sh <product>|--all`, без аргумента отказывается
 - очистка: `./02-purge-stages.sh`, сбрасывает кеш стадий, релизы не трогает
 - снос и очистка разрушающие; топология окружения одна на dev и prod
 

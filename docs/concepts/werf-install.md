@@ -89,7 +89,7 @@ werf version
   `kube_ci`. Пример пайплайна -- в [../integrations/gitlab-ci.md](../integrations/gitlab-ci.md).
 
 Сами скрипты контура подстраховываются: `utils/03-werf-converge.sh` и
-`utils/04-dissmiss.sh` выполняют `source "$(~/bin/trdl use werf 2 stable)"`
+`utils/04-dismiss.sh` выполняют `source "$(~/bin/trdl use werf 2 stable)"`
 самостоятельно, поэтому converge и dismiss работают даже в «голой» сессии, лишь
 бы trdl был установлен и репозиторий werf зарегистрирован.
 

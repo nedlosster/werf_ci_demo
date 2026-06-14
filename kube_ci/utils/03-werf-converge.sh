@@ -27,13 +27,20 @@ function deploy()
     secret_values_param="--secret-values=.helm/secrets-$ENVNAME.yaml"
   fi
 
-  # Переменные CI_* из env-функции def.sh пробрасываются в helm через --set
-  # (в нижнем регистре). CI_TAG исключён: строка с $(python3 ...) ломает sed.
-  def_content=$(set | awk "/^${env} \(\)/,/\}/")
-  ci_values=$(echo "$def_content" | awk '/export CI_/ && !/CI_TAG/ {gsub("export ", ""); print}' | sed 's/\(.*\)=\(.*\)/--set \L\1\E=\2/' | tr -d ';')
+  # Переменные CI_* из контракта .helm/def.sh пробрасываются в helm через --set
+  # (имя в нижнем регистре). Перебор -- по именам реально экспортированных
+  # CI_*-переменных (${!CI_@}), значение берётся косвенно (${!v}) -- безопасно
+  # к спецсимволам, кавычкам и пробелам, без разбора текста env-функции.
+  # CI_TAG исключён: он пробрасывается отдельно через --use-custom-tag (ниже).
+  ci_set_args=()
+  for v in ${!CI_@}; do
+    [ "$v" = "CI_TAG" ] && continue
+    ci_set_args+=(--set "${v,,}=${!v}")
+  done
 
   # version-based тег образов (из def.sh через CI_TAG)
-  [ -n "$CI_TAG" ] && custom_tag_param="--use-custom-tag=%image%-$CI_TAG"
+  custom_tag_args=()
+  [ -n "$CI_TAG" ] && custom_tag_args=(--use-custom-tag="%image%-$CI_TAG")
 
   werf converge \
     --dev \
@@ -46,8 +53,9 @@ function deploy()
     --namespace="$KUBE_NAMESPACE" \
     ${values_param} \
     ${secret_values_param} \
-    ${custom_tag_param} \
-    --loose-giterminism=true $ci_values \
+    "${custom_tag_args[@]}" \
+    --loose-giterminism=true \
+    "${ci_set_args[@]}" \
     --set APPNAME="$APPNAME" \
     --set DOMAIN="$DOMAIN" \
     --set use_ngnix_virtualserver="$USE_NGNIX_VIRTUALSERVER"

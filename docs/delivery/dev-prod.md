@@ -23,7 +23,7 @@
 | [`k8s_defs`](../../kube_ci/dev/k8s_defs) | параметры кластера: `REGISTRY`, `KUBECONTEXT`, `KUBECONFIG` |
 | [`productlist_official`](../../kube_ci/dev/productlist_official) | шаблон списка продуктов и их env-функций |
 | [`pull_products.sh`](../../kube_ci/dev/pull_products.sh) | связать `apps/<product>` symlink'ом в `products/` |
-| `00-build-deploy.sh`, `03-rollback.sh`, `01-dissmiss.sh`, `02-purge-stages.sh` | точки входа операций: публикация, откат версии, снос, очистка |
+| `00-build-deploy.sh`, `03-rollback.sh`, `01-dismiss.sh`, `02-purge-stages.sh` | точки входа операций: публикация, откат версии, снос, очистка |
 
 Точки входа в обоих каталогах идентичны -- они лишь подключают общие функции из
 `utils/` и подмешивают локальные `k8s_defs` и `productlist`. Самодостаточность

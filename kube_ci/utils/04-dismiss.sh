@@ -1,7 +1,7 @@
 #!/bin/bash
 # Откат: werf dismiss неймспейса продукта.
 
-function dissmiss()
+function dismiss()
 {
 	source "$(~/bin/trdl use werf 2 stable)"
 	source .helm/def.sh
@@ -12,4 +12,4 @@ function dissmiss()
 
 [[ "${#BASH_SOURCE[@]}" -gt "1" ]] && { return 0; }
 
-dissmiss
+dismiss

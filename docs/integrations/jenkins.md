@@ -9,7 +9,7 @@ bash-скрипты `kube_ci` с нужными доступами. Статью
 
 kube_ci -- это набор bash-скриптов, которые запускаются вручную из каталога
 окружения. Те же скрипты вызываются из stage'ей Jenkins: пайплайн становится
-тонкой обёрткой над `00-build-deploy.sh` / `03-rollback.sh` / `01-dissmiss.sh` /
+тонкой обёрткой над `00-build-deploy.sh` / `03-rollback.sh` / `01-dismiss.sh` /
 `02-purge-stages.sh`.
 
 ## Что нужно от агента
@@ -57,7 +57,7 @@ stage'ах, где они нужны.
 |---|---|
 | публикация (`00-build-deploy.sh`) | `Deploy dev` / `Deploy prod` |
 | откат версии (`03-rollback.sh`) | `Rollback` |
-| снос (`01-dissmiss.sh`) | `Dismiss` |
+| снос (`01-dismiss.sh`) | `Dismiss` |
 | очистка (`02-purge-stages.sh`) | `Purge` |
 
 Ручное подтверждение перед prod через `input` -- паритет с `when: manual` в
@@ -145,7 +145,7 @@ pipeline {
                     sh '''
                         source "$(~/bin/trdl use werf 2 stable)"
                         cd "kube_ci/$ENV"
-                        ./01-dissmiss.sh "$PRODUCT"
+                        ./01-dismiss.sh "$PRODUCT"
                     '''
                 }
             }
@@ -175,7 +175,7 @@ pipeline {
   если каждый продукт -- отдельный репозиторий, его исходники подключаются как
   submodule или отдельным `git clone` в `products/<product>` перед вызовом
   `00-build-deploy.sh`.
-- `01-dissmiss.sh` и `03-rollback.sh` требуют явного product key -- значение
+- `01-dismiss.sh` и `03-rollback.sh` требуют явного product key -- значение
   передаётся параметром `PRODUCT`, пустое приведёт к отказу с кодом возврата 1.
   В примере stage `Rollback` и `Dismiss` поэтому защищены `when`-условием на
   непустой `PRODUCT`. `03-rollback.sh` без параметра `REVISION` печатает `helm

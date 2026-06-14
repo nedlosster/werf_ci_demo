@@ -9,7 +9,7 @@ flowchart LR
         pull["pull_products.sh<br/>symlink apps/&lt;product&gt;"]
         conv["00-build-deploy.sh<br/>werf converge"]
         roll["03-rollback.sh<br/>helm rollback"]
-        dism["01-dissmiss.sh<br/>werf dismiss"]
+        dism["01-dismiss.sh<br/>werf dismiss"]
         pull --> conv
     end
 
