@@ -67,6 +67,16 @@ cd ../prod && ./01-dismiss.sh --all
 отказывает -- защита от случайного снятия всего. После сноса неймспейсы
 `<NAMESPACE>-dev` и `<NAMESPACE>-prod` каждого продукта пропадают.
 
+Терминация неймспейса не мгновенна. Если запустить деплой (шаг 3) сразу, werf
+ловит `unable to acquire lock ... namespace ... is being terminated` и ретраит
+(до 10x/4с) -- обычно проходит, но удлиняет первый деплой. Чтобы не зависеть от
+ретраев, дождаться полного удаления перед деплоем:
+
+```bash
+kubectl --context "$KUBECONTEXT" wait --for=delete \
+  ns/<APPNAME>-dev ns/<APPNAME>-prod --timeout=120s 2>/dev/null || true
+```
+
 ## Шаг 2. Очистка stages
 
 ```bash
@@ -83,19 +93,27 @@ cd ../prod && ./02-purge-stages.sh
 
 `converge` собирает образы, публикует в in-cluster registry и разворачивает
 релиз. Сборка двух стеков (Spring/Maven и FastAPI/Angular) долгая, поэтому
-запускать её удобнее отсоединённо, с логом и поллингом, чтобы прогон не
-блокировал сессию.
+запускать её надо отсоединённо, с логом и поллингом, чтобы прогон пережил
+обрыв ssh и не блокировал сессию.
+
+ВАЖНО про отсоединение. На сервере деплоя `setsid`/`nohup &` НЕ переживают
+закрытие ssh-сессии: процесс получает `Signal: terminated` (systemd-logind
+`KillUserProcesses` -- setsid/nohup не выходят из user-session-scope). Надёжно
+-- запускать прогон как transient-юнит пользовательского systemd (переживает
+отключение):
 
 ```bash
-cd kube_ci/dev
-setsid bash -c './00-build-deploy.sh --all' >/tmp/deploy-dev.log 2>&1 < /dev/null &
+systemd-run --user --unit=wfdeploy --collect \
+  -p "StandardOutput=append:$HOME/deploy.log" \
+  -p "StandardError=append:$HOME/deploy.log" \
+  bash -lc 'cd kube_ci/dev && ./00-build-deploy.sh --all; cd ../prod && ./00-build-deploy.sh --all; echo ALL_DONE'
 # поллинг:
-tail -f /tmp/deploy-dev.log
+systemctl --user is-active wfdeploy; tail -f ~/deploy.log
 ```
 
-То же для prod (отдельный лог `/tmp/deploy-prod.log`). Окончание converge --
-по строке вывода об успешном релизе в `tail` и завершению процесса
-(`pgrep -af 00-build-deploy`).
+Если `systemd --user` недоступен -- альтернатива `screen -dmS wfdeploy ...`
+(где есть `screen`). Окончание -- по `ALL_DONE` в логе и `is-active` ->
+`inactive`.
 
 ### Проверка rollout prod-форм (zero-downtime)
 
@@ -155,8 +173,13 @@ cd /workspace/werf_ci_demo/apps/app1-java-react/backend
   `npx ng` (тянет посторонний пакет). Флаг `--disable-host-check` в Angular 18
   удалён -- не использовать.
 
-Старт сервиса блокирует сессию пода; держать его в отдельном окне/панели или
-под `setsid ... &` с логом, аналогично шагу 3.
+Старт сервиса блокирует сессию пода; держать его под `setsid sh -c "..." &` с
+логом ВНУТРИ пода (там `setsid` отрабатывает -- ограничение systemd-logind из
+шага 3 относится к хосту сервера деплоя, не к поду). Конфиги фронтов уже
+настроены под ingress-доступ: Vite -- `server.allowedHosts: ['.nip.io']`
+(`vite.config.ts`), Angular -- serve-таргет с `host: 0.0.0.0, port: 8080`
+(`angular.json`); после `git pull` в `/workspace` доступны стандартными
+`./node_modules/.bin/vite` и `./node_modules/.bin/ng serve`.
 
 ## Шаг 5. Smoke
 

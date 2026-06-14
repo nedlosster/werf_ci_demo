@@ -11,5 +11,8 @@ export default defineConfig({
   server: {
     port: 5173,
     host: true,
+    // dev-сервер в кластере доступен через ingress по nip.io-хосту;
+    // без этого Vite 5 отвечает 403 на незнакомый Host. Демо-послабление.
+    allowedHosts: [".nip.io"],
   },
 });

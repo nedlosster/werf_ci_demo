@@ -27,6 +27,14 @@
             }
           },
           "defaultConfiguration": "production"
+        },
+        "serve": {
+          "builder": "@angular-devkit/build-angular:dev-server",
+          "options": {
+            "buildTarget": "app2-frontend:build",
+            "host": "0.0.0.0",
+            "port": 8080
+          }
         }
       }
     }
