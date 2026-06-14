@@ -1,7 +1,7 @@
 # Секреты app2-python-angular (werf helm secret)
 
 Пароли (БД, pgAdmin) хранятся зашифрованными в `.helm/secrets-<env>.yaml`.
-Шифрование -- werf. Механизм взят из cmdb.
+Шифрование -- штатный werf helm secret.
 
 ## Ключ шифрования
 
