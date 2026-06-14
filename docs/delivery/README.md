@@ -20,4 +20,6 @@
 - [versioning.md](versioning.md) -- единая версия VERSION -> CI_TAG по
   контейнерам, бекенду, фронтенду и чарту; set-version.sh.
 - [dev-in-cluster.md](dev-in-cluster.md) -- разработка внутри кластера: dev-поды
-  с persistent-volume'ами (исходники, кеши, vscode-server), VS Code Remote.
+  с persistent-volume'ами (исходники, кеши, vscode-server), VS Code Remote,
+  запуск dev-серверов через `dev-start.sh`, обновление рабочей копии `git pull`
+  по SSH.
