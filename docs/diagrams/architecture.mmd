@@ -1,10 +1,10 @@
 flowchart LR
     subgraph apps["apps/ (исходники продуктов)"]
         direction TB
-        subgraph cmdbweb["app1-java-react"]
-            cw_fe["frontend (React)"]
-            cw_be["backend (Spring Boot)"]
-            cw_helm[".helm/def.sh + werf.yaml"]
+        subgraph app1["app1-java-react"]
+            app1_fe["frontend (React)"]
+            app1_be["backend (Spring Boot)"]
+            app1_helm[".helm/def.sh + werf.yaml"]
         end
         subgraph assetsvc["app2-python-angular"]
             as_fe["frontend (Angular)"]
@@ -32,7 +32,7 @@ flowchart LR
         ingress["ingress-nginx<br/>CI_URL / pgadmin"]
     end
 
-    cmdbweb -. "pull_products (symlink)" .-> envdev
+    app1 -. "pull_products (symlink)" .-> envdev
     assetsvc -. "pull_products (symlink)" .-> envdev
     envdev --> werf
     envprod --> werf
