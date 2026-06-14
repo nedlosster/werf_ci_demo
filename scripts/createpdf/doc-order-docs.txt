@@ -10,6 +10,7 @@ concepts/werf-intro.md
 concepts/werf-install.md
 concepts/werf-vs-alternatives.md
 concepts/delivery-to-k8s.md
+concepts/application-contract.md
 concepts/security-and-tradeoffs.md
 
 ## Kubernetes

@@ -19,6 +19,9 @@
   GitOps-операторами ArgoCD/Flux.
 - [delivery-to-k8s.md](delivery-to-k8s.md) -- модель доставки: единый контур
   kube_ci, контракт `.helm/def.sh`, поток converge, три базовые операции.
+- [application-contract.md](application-contract.md) -- контракт приложения:
+  `.helm/def.sh`, переменные и файлы контракта, иерархия values, минимальный
+  набор для нового продукта.
 - [security-and-tradeoffs.md](security-and-tradeoffs.md) -- компромиссы схемы:
   insecure-registry, loose-giterminism, единый кластер dev/prod, nip.io,
   ключ секретов, dev-SSH-под.

@@ -1,5 +1,8 @@
 # apps -- демо-продукты
 
+Полное описание контракта -- в
+[docs/concepts/application-contract.md](../docs/concepts/application-contract.md).
+
 Каждый подкаталог -- отдельный продукт, который kube_ci собирает и деплоит
 независимо. У каждого продукта есть исходники фронта и бэкенда,
 `Dockerfile`/`Dockerfile.dev`, `werf.yaml` и `.helm/`-чарт (templates: ingress,

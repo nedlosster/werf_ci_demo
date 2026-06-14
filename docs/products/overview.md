@@ -10,7 +10,8 @@ Python). Контраст выбран не ради разнообразия к
 приложении. Эта статья сопоставляет продукты: что у них общее, чем они
 различаются и почему различия не доходят до уровня доставки. Сам поток доставки
 разобран в [../concepts/delivery-to-k8s.md](../concepts/delivery-to-k8s.md),
-контракт -- в [../../apps/README.md](../../apps/README.md).
+контракт -- в [../concepts/application-contract.md](../concepts/application-contract.md)
+и [../../apps/README.md](../../apps/README.md).
 
 ## Зачем два контрастных продукта
 

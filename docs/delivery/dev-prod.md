@@ -48,7 +48,9 @@ PRODUCTS=(                            PRODUCTS=(
 ```
 
 Env-функция экспортирует `ENVNAME` (`dev` или `prod`) и при необходимости
-`NAMESPACE`. Релиз контур разворачивает в неймспейс `<NAMESPACE>-<ENVNAME>`,
+`NAMESPACE` (полный разбор -- в
+[Контракте приложения](../concepts/application-contract.md)). Релиз контур
+разворачивает в неймспейс `<NAMESPACE>-<ENVNAME>`,
 поэтому для app1-java-react это `app1-java-react-dev` и `app1-java-react-prod`.
 Одно приложение в обоих окружениях не конфликтует даже на одном кластере: их
 объекты лежат в разных неймспейсах. Помимо неймспейса env-функция меняет `CI_URL`
