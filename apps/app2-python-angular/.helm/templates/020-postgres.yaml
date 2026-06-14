@@ -18,9 +18,14 @@ metadata:
   name: app2-python-angular-postgres
   labels:
     {{- include "app2.labels" . | nindent 4 }}
+  annotations:
+    werf.io/track-termination-mode: NonBlocking
+    werf.io/fail-mode: IgnoreAndContinueDeployProcess
 spec:
   serviceName: app2-python-angular-postgres
   replicas: 1
+  updateStrategy:
+    type: OnDelete
   selector:
     matchLabels:
       app.kubernetes.io/name: {{ include "app2.name" . }}

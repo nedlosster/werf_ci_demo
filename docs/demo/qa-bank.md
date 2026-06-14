@@ -183,6 +183,24 @@ VERSION` (версия продукта, она же `CI_TAG`). Это и ест
 передают вторым аргументом: `./03-rollback.sh <product> <revision>`. См.
 [runbook отката](../runbooks/rollback.md).
 
+### 14г. Как деплой не роняет базу и приложение
+
+Защита идёт на двух слоях. База: StatefulSet Postgres объявлен с
+`updateStrategy: OnDelete`, поэтому Kubernetes не пересоздаёт под при изменении
+спецификации StatefulSet, а две werf-аннотации
+(`werf.io/track-termination-mode: NonBlocking`,
+`werf.io/fail-mode: IgnoreAndContinueDeployProcess`) не дают atomic-converge
+ждать готовности обновлённого пода и откатывать релиз из-за него; данные живут на
+PVC и переживают пересоздание. Приложение: prod-Deployment бэкенда и фронта идёт
+`RollingUpdate` с `maxUnavailable: 0` и `maxSurge: 1`, плюс
+`terminationGracePeriodSeconds: 30` и graceful `preStop` -- старый под держит
+трафик, пока новый не готов. У демо образ Postgres статичный, поэтому защита базы
+здесь -- страховка бесшовности, а не починка бага; trade-off `OnDelete` --
+обновление образа базы требует ручного `kubectl delete pod <app>-postgres-0`. См.
+[PostgreSQL и инициализация схемы](../products/postgres-and-init.md),
+[спецификации манифестов](../kubernetes/specifications.md) и
+[runbook деплоя](../runbooks/deploy.md).
+
 ## Секреты и версии
 
 ### 15. Где хранятся пароли и как они шифруются

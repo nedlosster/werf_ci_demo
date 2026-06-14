@@ -45,6 +45,22 @@ cd kube_ci/dev
 разворачивает релиз в неймспейсе `<NAMESPACE>-<ENVNAME>`. После деплоя
 печатаются URL сервиса и pgAdmin.
 
+## Обновление образа или спецификации Postgres
+
+StatefulSet базы развёрнут со стратегией `updateStrategy: OnDelete`, поэтому
+обычный `converge` не пересоздаёт под Postgres (механизм -- в
+[PostgreSQL и инициализация схемы](../products/postgres-and-init.md)). При
+намеренном изменении образа или спецификации базы под после `converge`
+обновляют вручную:
+
+```bash
+kubectl delete pod <app>-postgres-0
+```
+
+StatefulSet поднимает под по новой спецификации; данные на PVC (том `data`)
+сохраняются. В демо образ Postgres статичный (`postgres:16`), так что шаг
+требуется только при намеренной правке самой базы.
+
 ## Снос
 
 ```bash

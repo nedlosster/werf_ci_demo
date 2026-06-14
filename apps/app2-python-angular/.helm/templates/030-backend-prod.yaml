@@ -21,6 +21,11 @@ metadata:
     {{- include "app2.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.backend.replicas }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
   selector:
     matchLabels:
       app.kubernetes.io/name: {{ include "app2.name" . }}
@@ -31,6 +36,7 @@ spec:
         app.kubernetes.io/name: {{ include "app2.name" . }}
         component: backend
     spec:
+      terminationGracePeriodSeconds: 30
       containers:
         - name: backend
           image: {{ index .Values.werf.image "backend" }}
@@ -41,6 +47,10 @@ spec:
                 name: app2-python-angular-config
             - secretRef:
                 name: app2-python-angular-secrets
+          lifecycle:
+            preStop:
+              exec:
+                command: ["sh", "-c", "sleep 5"]
           readinessProbe:
             httpGet:
               path: /health
