@@ -6,7 +6,7 @@ DIR=$(dirname "${THIS}")
 cd "$DIR" || exit 1
 
 source ./productlist
-source ../utils/04-dissmiss.sh
+source ../utils/04-dismiss.sh
 source ./k8s_defs
 
 # Безопасность: dismiss требует явного product key(s) или --all. Без аргумента
@@ -25,7 +25,7 @@ for product in "${!PRODUCTS[@]}"
 do
     if [[ " ${*} " =~ " ${product} " || " ${*} " =~ " --all " ]]; then
         pushd "$(readlink -f "$PRODUCTS_DIR/$product")" || continue
-        dissmiss "${PRODUCTS[$product]}"
+        dismiss "${PRODUCTS[$product]}"
         popd || exit 1
         matched=1
     else

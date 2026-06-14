@@ -35,12 +35,12 @@
 kube_ci/
 ├── utils/                       # общие bash-функции (библиотеки)
 │   ├── 03-werf-converge.sh      # deploy() -- werf converge (build + deploy)
-│   ├── 04-dissmiss.sh           # dissmiss() -- werf dismiss
+│   ├── 04-dismiss.sh            # dismiss() -- werf dismiss
 │   ├── 05-purge-stages-local.sh # purge_stages_local() -- сброс stages
 │   └── 10-purge-werf-registry.sh# полная очистка werf-кеша и образов
 └── <env>/                       # dev/ | prod/ -- одинаковый набор:
     ├── 00-build-deploy.sh       # публикация (werf converge)
-    ├── 01-dissmiss.sh           # откат (требует product key или --all)
+    ├── 01-dismiss.sh            # откат (требует product key или --all)
     ├── 02-purge-stages.sh       # очистка
     ├── pull_products.sh         # связать apps/<product> -> products/
     ├── k8s_defs                 # REGISTRY (nip.io) / KUBECONTEXT / KUBECONFIG

@@ -9,7 +9,7 @@
 
 kube_ci -- это набор bash-скриптов, которые запускаются вручную из каталога
 окружения. Те же скрипты можно вызывать из GitLab CI: пайплайн становится
-тонкой обёрткой над `00-build-deploy.sh` / `03-rollback.sh` / `01-dissmiss.sh` /
+тонкой обёрткой над `00-build-deploy.sh` / `03-rollback.sh` / `01-dismiss.sh` /
 `02-purge-stages.sh`.
 
 ## Что нужно от раннера
@@ -50,7 +50,7 @@ environment-scoped переменные или `k8s_defs` соответству
 |---|---|
 | публикация (`00-build-deploy.sh`) | `deploy-dev` / `deploy-prod` |
 | откат версии (`03-rollback.sh`) | `rollback` (manual) |
-| снос (`01-dissmiss.sh`) | `dismiss` (manual) |
+| снос (`01-dismiss.sh`) | `dismiss` (manual) |
 | очистка (`02-purge-stages.sh`) | `cleanup` (manual / scheduled) |
 
 ## Пример `.gitlab-ci.yml`
@@ -95,7 +95,7 @@ dismiss:
   stage: dismiss
   script:
     - cd "kube_ci/$ENV"          # ENV и PRODUCT задаются при ручном запуске
-    - ./01-dissmiss.sh "$PRODUCT"
+    - ./01-dismiss.sh "$PRODUCT"
   when: manual
 
 purge:
@@ -111,7 +111,7 @@ purge:
 - В CI продукты не обязательно тянуть через `pull_products.sh` symlink'ами:
   если каждый продукт -- отдельный репозиторий, его исходники подключаются как
   submodule или отдельным `git clone` в `products/<product>` на стадии deploy.
-- `01-dissmiss.sh` и `03-rollback.sh` требуют явного product key -- в ручном job
+- `01-dismiss.sh` и `03-rollback.sh` требуют явного product key -- в ручном job
   значение передаётся через переменную (`$PRODUCT`), пустое приведёт к отказу.
   `03-rollback.sh` без `$REVISION` печатает `helm history` и не меняет кластер.
 - Для werf-cleanup образов в registry по политикам (`werf.yaml: cleanup`)

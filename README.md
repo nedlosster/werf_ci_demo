@@ -42,7 +42,7 @@
 | Операция | Команда |
 |---|---|
 | Публикация (werf converge) | `./pull_products.sh && ./00-build-deploy.sh` |
-| Откат (dismiss namespace) | `./01-dissmiss.sh <product>` |
+| Откат (dismiss namespace) | `./01-dismiss.sh <product>` |
 | Очистка (сброс кеша сборки) | `./02-purge-stages.sh` |
 
 Полный сценарий -- [docs/runbooks/deploy.md](docs/runbooks/deploy.md).
@@ -57,7 +57,7 @@
   деплоя с доступом к кластеру и реестру -- ни CI-системы, ни git-сервера не
   требуется.
 - **В составе конвейера** -- GitLab CI, Jenkins или другой раннер вызывает те же
-  `00-build-deploy.sh` / `03-rollback.sh` / `01-dissmiss.sh` /
+  `00-build-deploy.sh` / `03-rollback.sh` / `01-dismiss.sh` /
   `02-purge-stages.sh`. Пайплайн становится **тонкой обёрткой**, а не
   переписанной логикой: stage'ы маппятся на эти же скрипты.
 
@@ -75,7 +75,7 @@
 (`git pull`) и прогоняет `kube_ci` (`werf converge`, откат, снос) в неймспейс
 `<NAMESPACE>-<ENVNAME>` кластера. CI-система не нужна.
 
-![Автономный режим: рабочая машина (git push) -> сервер деплоя (pull_products, werf converge, 03-rollback, 01-dissmiss) -> registry и неймспейс окружения с ingress-nginx, frontend/backend Service, PostgreSQL и pgAdmin](docs/pics/deploy-topology.png)
+![Автономный режим: рабочая машина (git push) -> сервер деплоя (pull_products, werf converge, 03-rollback, 01-dismiss) -> registry и неймспейс окружения с ingress-nginx, frontend/backend Service, PostgreSQL и pgAdmin](docs/pics/deploy-topology.png)
 
 **В составе конвейера** -- перед тем же `kube_ci` встают VCS и CI-раннеры
 (GitLab CI / Jenkins); контур остаётся той же тонкой обёрткой, меняется лишь

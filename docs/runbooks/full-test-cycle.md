@@ -43,7 +43,7 @@
 
 | # | Шаг | dev | prod |
 |---|-----|-----|------|
-| 1 | Снос всех профилей | `./01-dissmiss.sh --all` | `./01-dissmiss.sh --all` |
+| 1 | Снос всех профилей | `./01-dismiss.sh --all` | `./01-dismiss.sh --all` |
 | 2 | Очистка stages | `./02-purge-stages.sh` | `./02-purge-stages.sh` |
 | 3 | Сборка + деплой (4 варианта) | `./00-build-deploy.sh --all` | `./00-build-deploy.sh --all` |
 | 4 | Ручной старт приложений в dev | см. ниже | -- |
@@ -59,8 +59,8 @@
 ## Шаг 1. Снос всех профилей
 
 ```bash
-cd kube_ci/dev  && ./01-dissmiss.sh --all
-cd ../prod && ./01-dissmiss.sh --all
+cd kube_ci/dev  && ./01-dismiss.sh --all
+cd ../prod && ./01-dismiss.sh --all
 ```
 
 `werf dismiss` снимает релиз вместе с неймспейсом. Без аргумента скрипт

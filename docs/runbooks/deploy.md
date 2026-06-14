@@ -65,8 +65,8 @@ StatefulSet поднимает под по новой спецификации; 
 
 ```bash
 cd kube_ci/dev
-./01-dissmiss.sh app1-java-react     # werf dismiss конкретного продукта
-./01-dissmiss.sh --all        # снять все продукты из productlist
+./01-dismiss.sh app1-java-react     # werf dismiss конкретного продукта
+./01-dismiss.sh --all        # снять все продукты из productlist
 ```
 
 Без аргумента скрипт отказывает (защита от снятия всех продуктов разом). Снос
