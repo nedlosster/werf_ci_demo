@@ -34,6 +34,19 @@
 Разные стеки специально: один CI-контур обслуживает оба продукта через единый
 контракт `.helm/def.sh` (см. [apps/README.md](apps/README.md)).
 
+## Разработка прямо в кластере
+
+![Типовой цикл работы в dev-поде](docs/pics/dev-workflow-cycle.png)
+
+Код пишется не на ноутбуке, а в самом кластере: dev-под с `sleep infinity`,
+подключённый через VS Code Remote. Окружение `dev` рендерит те же `.helm`-чарты,
+что и `prod` -- Ingress, Service, StatefulSet с Postgres, ConfigMap и Secret, --
+поэтому dev почти неотличим от prod, и отлаживать можно саму логику Kubernetes
+(маршрутизацию Ingress, пробы, service discovery), а не только контейнеры. Один
+werf/kube_ci-контур прогоняет оба окружения одним механизмом: переключение
+dev/prod -- это смена окружения в `.helm/def.sh`, а не второй артефакт доставки.
+Разбор цикла -- [docs/delivery/dev-workflow-cycle.md](docs/delivery/dev-workflow-cycle.md).
+
 ## Базовые операции
 
 Все операции запускаются из каталога окружения (`kube_ci/dev/` или

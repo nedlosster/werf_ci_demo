@@ -1,0 +1,33 @@
+sequenceDiagram
+    actor dev as Разработчик<br/>(VS Code Remote)
+    participant pod as dev-под<br/>(/workspace, sleep infinity)
+    participant gh as GitHub<br/>(репозиторий, VERSION)
+    participant ci as Деплой-сервер / GitLab CI<br/>(kube_ci)
+    participant prod as prod-кластер
+
+    dev->>pod: подключение VS Code Remote / kubectl exec
+    pod->>gh: git pull в /workspace (SSH-ключ id-rsa-vcs)
+    gh-->>pod: исходники монорепо
+
+    loop правка -> отладка -> тест
+        dev->>pod: правка исходников в /workspace
+        dev->>pod: dev-start.sh (бек/фронт на 0.0.0.0:8080)
+        pod-->>dev: отладка через ingress по nip.io
+        dev->>pod: curl по профилям, функциональная проверка в dev
+    end
+
+    dev->>gh: git push с рабочей машины
+
+    alt деплой-сервер: git pull вручную
+        ci->>gh: git pull
+    else GitLab CI: pipeline по коммиту
+        gh->>ci: триггер pipeline
+    end
+
+    ci->>ci: 00-build-deploy.sh -> werf converge (dev)
+    Note over ci: dev разворачивается автоматически
+
+    ci->>prod: converge prod (только с разрешения)
+    Note over ci,prod: прод -- точка остановки
+    ci->>prod: rollout + 04-smoke.sh
+    prod-->>ci: статус smoke-проверки

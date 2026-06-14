@@ -26,3 +26,6 @@
 - [dev-caches-and-volumes.md](dev-caches-and-volumes.md) -- устройство двух PVC
   dev-пода (`workspace`, `homeapp`), симлинки кешей пакетных менеджеров на том,
   что переживает пересоздание пода и перезагрузку ВМ.
+- [dev-workflow-cycle.md](dev-workflow-cycle.md) -- типовой цикл работы в
+  dev-поде: подключение, `git pull`, петля правка-отладка-тест, `git push`,
+  выкат через `kube_ci` в dev и prod.

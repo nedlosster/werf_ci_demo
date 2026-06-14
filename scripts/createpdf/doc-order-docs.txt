@@ -34,6 +34,8 @@ delivery/kube-ci-operations.md
 delivery/secrets.md
 delivery/versioning.md
 delivery/dev-in-cluster.md
+delivery/dev-caches-and-volumes.md
+delivery/dev-workflow-cycle.md
 
 ## Интеграции
 integrations/README.md
