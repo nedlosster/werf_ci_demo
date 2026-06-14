@@ -64,9 +64,22 @@
 многостадийного пайплайна с промоутом dev -> prod, откатом и очисткой по
 расписанию.
 
+Оба режима наглядно.
+
+**Автономный режим** -- рабочая машина пушит код, сервер деплоя тянет его
+(`git pull`) и прогоняет `kube_ci` (`werf converge`, откат, снос) в неймспейс
+`<NAMESPACE>-<ENVNAME>` кластера. CI-система не нужна.
+
+![Автономный режим: рабочая машина (git push) -> сервер деплоя (pull_products, werf converge, 03-rollback, 01-dissmiss) -> registry и неймспейс окружения с ingress-nginx, frontend/backend Service, PostgreSQL и pgAdmin](docs/pics/deploy-topology.png)
+
+**В составе конвейера** -- перед тем же `kube_ci` встают VCS и CI-раннеры
+(GitLab CI / Jenkins); контур остаётся той же тонкой обёрткой, меняется лишь
+способ запуска и доступ раннера.
+
+![Встраивание в промышленный CI/CD: VCS -> CI-раннеры (GitLab CI, Jenkins) -> kube_ci -> registry -> кластеры dev и prod](docs/pics/industrial-cicd.png)
+
 Подключение по системам -- [docs/integrations/](docs/integrations/README.md)
-(GitLab CI, Jenkins, метрики DORA); место контура в большом конвейере доставки --
-диаграмма `industrial-cicd` ([docs/pics/industrial-cicd.png](docs/pics/industrial-cicd.png)).
+(GitLab CI, Jenkins, метрики DORA).
 
 ## Почему werf и когда такой подход оправдан
 
