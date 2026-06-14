@@ -5,7 +5,7 @@
 set -e
 
 # 1. Каталоги кешей и vscode-server в PVC homeapp (переживают перезапуск)
-for d in .m2 .vscode-server .config; do
+for d in .m2 .npm .cache .vscode-server .config; do
     mkdir -p "/home/app/homeapp/$d"
     chown -R app "/home/app/homeapp/$d" 2>/dev/null || true
 done

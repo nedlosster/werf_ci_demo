@@ -30,8 +30,11 @@ RUN printf 'Host github.com\n\tStrictHostKeyChecking no\n\tUserKnownHostsFile=/d
 USER app
 WORKDIR /home/app
 
-RUN mkdir -p /home/app/homeapp/.cache /home/app/homeapp/.vscode-server /home/app/homeapp/.config && \
+# Кеш pip (~/.cache) и user-site (~/.local, куда pip install --user ставит пакеты)
+# на единый PVC homeapp -- переживают рестарт пода, переустановка не нужна.
+RUN mkdir -p /home/app/homeapp/.cache /home/app/homeapp/.local /home/app/homeapp/.vscode-server /home/app/homeapp/.config && \
     ln -sfn /home/app/homeapp/.cache /home/app/.cache && \
+    ln -sfn /home/app/homeapp/.local /home/app/.local && \
     ln -sfn /home/app/homeapp/.vscode-server /home/app/.vscode-server && \
     ln -sfn /home/app/homeapp/.config /home/app/.config
 

@@ -2,5 +2,5 @@ apiVersion: v2
 name: app2-python-angular
 description: Демо-чарт app2-python-angular (Angular + FastAPI + PostgreSQL + pgAdmin).
 type: application
-version: 0.1.3
-appVersion: "0.1.3"
+version: 0.1.4
+appVersion: "0.1.4"

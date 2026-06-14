@@ -3,7 +3,7 @@
 # однократный клон монорепо werf_ci_demo в /workspace. Идемпотентен.
 set -e
 
-for d in .cache .npm .vscode-server .config; do
+for d in .cache .npm .local .vscode-server .config; do
     mkdir -p "/home/app/homeapp/$d"
     chown -R app "/home/app/homeapp/$d" 2>/dev/null || true
 done

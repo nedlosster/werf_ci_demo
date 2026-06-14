@@ -32,9 +32,10 @@ RUN printf 'Host github.com\n\tStrictHostKeyChecking no\n\tUserKnownHostsFile=/d
 USER app
 WORKDIR /home/app
 
-# Симлинки pnpm-store/.cache/vscode на единый PVC homeapp
-RUN mkdir -p /home/app/homeapp/.local/share/pnpm /home/app/homeapp/.cache /home/app/homeapp/.vscode-server /home/app/homeapp/.config && \
+# Симлинки кешей npm/pnpm/.cache/vscode на единый PVC homeapp (переживают рестарт)
+RUN mkdir -p /home/app/homeapp/.npm /home/app/homeapp/.local/share/pnpm /home/app/homeapp/.cache /home/app/homeapp/.vscode-server /home/app/homeapp/.config && \
     mkdir -p /home/app/.local/share && \
+    ln -sfn /home/app/homeapp/.npm /home/app/.npm && \
     ln -sfn /home/app/homeapp/.local/share/pnpm /home/app/.local/share/pnpm && \
     ln -sfn /home/app/homeapp/.cache /home/app/.cache && \
     ln -sfn /home/app/homeapp/.vscode-server /home/app/.vscode-server && \
