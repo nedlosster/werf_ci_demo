@@ -69,7 +69,7 @@ backup-слайды из [банка вопросов](qa-bank.md), которы
 
 - `app1-java-react`: React + Spring Boot
 - `app2-python-angular`: Angular + FastAPI
-- разведены по языку, веб-фреймворку, сборщику фронта, health-пробам
+- разведены по языку, веб-фреймворку, менеджерам пакетов (Maven/pip, pnpm/npm), health-пробам
 - один converge на оба, без ветки «если это app1»
 - различия живут в `Dockerfile`, `werf.yaml`, чарте
 

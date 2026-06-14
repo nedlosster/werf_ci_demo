@@ -21,6 +21,7 @@ Python). Контраст выбран не ради разнообразия к
 
 - язык бэкенда -- Java против Python;
 - веб-фреймворк бэкенда -- Spring Boot против FastAPI;
+- менеджер пакетов бэкенда -- Maven против pip;
 - фронтенд-фреймворк -- React (Vite) против Angular (Angular CLI);
 - менеджер пакетов фронта -- pnpm против npm;
 - модель health-проб -- actuator на отдельном порту против HTTP-эндпойнта на
@@ -77,6 +78,7 @@ dev-форма (`031`, `041`) -- StatefulSet, который держит дол
 |---|---|---|
 | Бэкенд: язык | Java 17 | Python 3.12 |
 | Бэкенд: фреймворк | Spring Boot 3.2.5 | FastAPI >=0.111 |
+| Бэкенд: пакеты | Maven (`pom.xml`) | pip + `pyproject.toml` |
 | Бэкенд: запуск | `java -jar app.jar` | `uvicorn app2.main:app` |
 | Бэкенд: health | actuator на порту 8081 | `/health` на порту 8080 |
 | Фронтенд: фреймворк | React 18 + Vite 5 | Angular 18 (Angular CLI) |

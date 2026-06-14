@@ -10,7 +10,7 @@
 
 ## Бэкенд: Spring Boot
 
-Бэкенд -- Spring Boot 3.2.5 на Java 17
+Бэкенд -- Spring Boot 3.2.5 на Java 17, менеджер пакетов и сборки Maven
 ([`backend/pom.xml`](../../apps/app1-java-react/backend/pom.xml)). Подключены
 стартеры web, actuator и jdbc, драйвер PostgreSQL и springdoc для swagger-ui.
 Приложение целиком работает под context-path `/api`

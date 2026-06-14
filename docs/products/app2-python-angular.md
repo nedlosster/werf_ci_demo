@@ -11,7 +11,7 @@
 
 ## Бэкенд: FastAPI
 
-Бэкенд -- FastAPI (>=0.111) на Python 3.12, под uvicorn
+Бэкенд -- FastAPI (>=0.111) на Python 3.12 под uvicorn, менеджер пакетов pip
 ([`backend/pyproject.toml`](../../apps/app2-python-angular/backend/pyproject.toml)).
 Зависимости минимальны: `fastapi`, `uvicorn[standard]` и `psycopg[binary]` для
 работы с PostgreSQL. Пакет приложения лежит в `src/` (layout `src/app2`),
