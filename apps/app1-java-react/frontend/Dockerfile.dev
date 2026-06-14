@@ -5,13 +5,29 @@
 # Контекст сборки -- корень продукта (apps/app1-java-react).
 FROM node:20-bookworm
 
+# Локаль и таймзона: иначе LC_ALL даёт warning, время в логах -- UTC.
+ENV LANG=en_US.UTF-8 \
+    LC_ALL=en_US.UTF-8 \
+    TZ=Europe/Moscow \
+    TERM=xterm
+
+# git/ssh/sudo -- база; остальное -- утилиты для разработки и отладки внутри пода.
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends git openssh-client sudo procps ca-certificates && \
+    apt-get install -y --no-install-recommends \
+        git openssh-client sudo procps ca-certificates \
+        locales tzdata mc curl wget less jq vim \
+        iputils-ping dnsutils net-tools telnet socat zip tree postgresql-client && \
+    sed -i 's/^# *en_US.UTF-8/en_US.UTF-8/' /etc/locale.gen && locale-gen && \
+    ln -snf /usr/share/zoneinfo/Europe/Moscow /etc/localtime && echo "Europe/Moscow" > /etc/timezone && \
     rm -rf /var/lib/apt/lists/* && \
     corepack enable
 
 RUN useradd -m -u 10001 -s /bin/bash app && \
     echo "app ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/app && chmod 0440 /etc/sudoers.d/app
+
+# git pull по SSH из пода: ключ монтируется в ~/.ssh/id_rsa, host-проверку
+# github.com отключаем глобально -- pull от пользователя app идёт без known_hosts.
+RUN printf 'Host github.com\n\tStrictHostKeyChecking no\n\tUserKnownHostsFile=/dev/null\n' >> /etc/ssh/ssh_config
 
 USER app
 WORKDIR /home/app
