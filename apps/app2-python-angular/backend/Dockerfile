@@ -3,6 +3,11 @@
 FROM python:3.12-slim AS runtime
 WORKDIR /app
 
+# UTF-8 локаль (встроенная C.UTF-8, без пакета locales): корректная работа с
+# не-ASCII в логах и I/O.
+ENV LANG=C.UTF-8 \
+    LC_ALL=C.UTF-8
+
 ARG BUILD_HASH=unknown
 
 # зависимости (кешируется по pyproject через BuildKit cache mount)

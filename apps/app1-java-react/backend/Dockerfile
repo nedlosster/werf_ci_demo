@@ -17,6 +17,11 @@ RUN --mount=type=cache,target=/root/.m2 mvn -B -e package -DskipTests
 FROM eclipse-temurin:17-jre AS runtime
 WORKDIR /app
 
+# UTF-8 локаль (встроенная C.UTF-8, без пакета locales): корректная работа с
+# не-ASCII в логах и I/O. На JRE 17 иначе file.encoding падает в ASCII.
+ENV LANG=C.UTF-8 \
+    LC_ALL=C.UTF-8
+
 ARG BUILD_HASH=unknown
 
 # non-root
