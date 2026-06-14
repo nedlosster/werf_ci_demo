@@ -18,9 +18,14 @@ metadata:
   name: app1-java-react-postgres
   labels:
     {{- include "app1.labels" . | nindent 4 }}
+  annotations:
+    werf.io/track-termination-mode: NonBlocking
+    werf.io/fail-mode: IgnoreAndContinueDeployProcess
 spec:
   serviceName: app1-java-react-postgres
   replicas: 1
+  updateStrategy:
+    type: OnDelete
   selector:
     matchLabels:
       app.kubernetes.io/name: {{ include "app1.name" . }}

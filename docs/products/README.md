@@ -17,7 +17,8 @@ CI-контур: React + Spring Boot (app1-java-react) и Angular + FastAPI
   React + Vite, dev/prod-образы, описание в werf.yaml.
 - [app2-python-angular.md](app2-python-angular.md) -- состав и сборка app2:
   FastAPI, Angular, dev/prod-образы, описание в werf.yaml.
-- [postgres-and-init.md](postgres-and-init.md) -- PostgreSQL как StatefulSet и
+- [postgres-and-init.md](postgres-and-init.md) -- PostgreSQL как StatefulSet,
+  защита базы от перезапуска при деплое (OnDelete + werf-аннотации) и
   инициализация схемы из init.sql (без миграторов).
 - [pgadmin.md](pgadmin.md) -- pgAdmin как вспомогательный сервис: подключение к
   базе, доступ через Ingress, только в dev.

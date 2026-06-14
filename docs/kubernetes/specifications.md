@@ -70,6 +70,12 @@ ConfigMap. Демо: пароль по умолчанию задан прямо 
 контуре его место -- werf secret (см.
 [../concepts/security-and-tradeoffs.md](../concepts/security-and-tradeoffs.md)).
 
+StatefulSet базы объявлен со стратегией обновления `updateStrategy: OnDelete` и
+двумя werf-аннотациями (`werf.io/track-termination-mode: NonBlocking`,
+`werf.io/fail-mode: IgnoreAndContinueDeployProcess`) -- связка защищает под
+Postgres от пересоздания при atomic-converge. Разбор и trade-off -- в
+[PostgreSQL и инициализация схемы](../products/postgres-and-init.md).
+
 ## Различие dev и prod
 
 Форма бэкенда и фронта переключается по `.Values.env`, поэтому из одного чарта
@@ -79,7 +85,12 @@ ConfigMap. Демо: пароль по умолчанию задан прямо 
   [`werf.yaml`](../../apps/app1-java-react/werf.yaml) (`.Values.werf.image`),
   readiness/liveness-пробы на actuator-портах бэкенда, число реплик из
   [`values-prod.yaml`](../../apps/app1-java-react/.helm/values-prod.yaml)
-  (бэкенд и фронт по 2). pgAdmin выключен.
+  (бэкенд и фронт по 2). pgAdmin выключен. Стратегия обновления --
+  `RollingUpdate` с `maxUnavailable: 0` и `maxSurge: 1`,
+  `terminationGracePeriodSeconds: 30` и graceful `preStop` (`sleep 5`): старый
+  под продолжает обслуживать запросы, пока новый не готов, что даёт
+  zero-downtime при выкатке. Trade-off: при `replicas: 1` `maxSurge: 1` кратко
+  поднимает второй под -- дополнительная нагрузка на single-node preprod.
 - dev (`031-backend-dev`, `041-frontend-dev`): StatefulSet с одной репликой,
   два persistent-тома (`workspace`, `homeapp`), init-контейнер `prepare-dev-env`
   и смонтированный ssh-ключ `id-rsa-vcs`. ENTRYPOINT образа -- `sleep infinity`:
