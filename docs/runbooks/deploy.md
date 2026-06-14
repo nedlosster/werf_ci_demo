@@ -85,6 +85,10 @@ cd kube_ci/dev
 
 ## Связанные runbook'и
 
+- [full-test-cycle.md](full-test-cycle.md) -- сквозной прогон всех базовых
+  операций по обоим окружениям и продуктам (снос -> очистка -> деплой ->
+  smoke -> bump -> повторный деплой -> smoke), с проверкой rollout и
+  валидацией OnDelete у Postgres.
 - [rollback.md](rollback.md) -- откат версии релиза на ранее опубликованную
   ревизию через `helm rollback`, список доступных версий, ограничение по БД.
 - [cluster-connection.md](cluster-connection.md) -- подключение к кластеру,
