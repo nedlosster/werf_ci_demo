@@ -11,7 +11,8 @@
 ## Статьи
 
 - [requirements.md](requirements.md) -- требования к кластеру: топология,
-  ingress, in-cluster registry через nip.io, insecure-доступ.
+  ingress, реестр образов (в демо in-cluster через nip.io, может быть внешним),
+  insecure-доступ.
 - [specifications.md](specifications.md) -- объекты чарта на продукт,
   неймспейсы окружений, ресурсы, источник образов, различие dev vs prod.
 - [ingress.md](ingress.md) -- организация ingress, хосты nip.io и маршрутизация

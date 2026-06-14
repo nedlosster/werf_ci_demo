@@ -104,7 +104,8 @@ storageClass правятся в [`values.yaml`](../../apps/app1-java-react/.hel
 ## Образы и registry
 
 Образы prod-форм подставляются через `.Values.werf.image.<image>` -- werf сам
-прокидывает в чарт адреса собранных образов. Регистром служит in-cluster registry
+прокидывает в чарт адреса собранных образов. Реестр задаётся переменной
+`REGISTRY` и не обязан быть внутри кластера; в демо им служит in-cluster registry
 на хосте `registry-<NODE_IP>.nip.io` (фактическое значение `NODE_IP` --
 в [`kube_ci/<env>/k8s_defs`](../../kube_ci/dev/k8s_defs)); converge публикует образы в
 `$REGISTRY/$APPNAME` и тегирует их версией `CI_TAG` из файла
