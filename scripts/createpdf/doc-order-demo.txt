@@ -2,7 +2,7 @@
 # Пути относительно docs/. "## Имя" -- разрыв страницы с заголовком раздела.
 
 ## План доклада
-demo/talk-plan-40min.md
+demo/talk-plan-60min.md
 
 ## Слайды
 demo/slides.md
