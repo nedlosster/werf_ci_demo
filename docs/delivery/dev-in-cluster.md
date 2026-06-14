@@ -57,7 +57,9 @@ I/O. На JRE 17 без этого `file.encoding` уходит в ASCII. Про
 - frontend: `~/.local/share/pnpm` (pnpm store), `~/.cache`, `~/.vscode-server`, `~/.config`.
 
 Поэтому кеш пакетов и расширения/настройки VS Code пишутся в PVC `homeapp` и не
-теряются при пересоздании пода или перезапуске ВМ.
+теряются при пересоздании пода или перезапуске ВМ. Детальный разбор обоих томов,
+симлинков кешей по компонентам и жизненного цикла PVC --
+[Кеши и persistent-volume'ы dev-сред](dev-caches-and-volumes.md).
 
 ## Инициализация (initContainer)
 
@@ -158,6 +160,7 @@ cd kube_ci/dev
 ## Связанные статьи
 
 - [Один контур, два окружения](dev-prod.md)
+- [Кеши и persistent-volume'ы dev-сред](dev-caches-and-volumes.md)
 - [Операции kube_ci](kube-ci-operations.md)
 - [Управление секретами](secrets.md)
 - [Спецификации Kubernetes](../kubernetes/specifications.md)

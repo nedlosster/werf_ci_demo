@@ -23,3 +23,6 @@
   с persistent-volume'ами (исходники, кеши, vscode-server), VS Code Remote,
   запуск dev-серверов через `dev-start.sh`, обновление рабочей копии `git pull`
   по SSH.
+- [dev-caches-and-volumes.md](dev-caches-and-volumes.md) -- устройство двух PVC
+  dev-пода (`workspace`, `homeapp`), симлинки кешей пакетных менеджеров на том,
+  что переживает пересоздание пода и перезагрузку ВМ.
