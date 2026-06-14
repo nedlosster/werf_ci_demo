@@ -7,7 +7,10 @@ function purge_stages_local()
 	source .helm/def.sh
 	env=$1
 	$env
-	werf stages purge --force --stages-storage=:local
+	# werf v2: команды `stages purge` нет; локальный кеш сборки чистится
+	# `host purge` по имени проекта. project-name == APPNAME из .helm/def.sh
+	# (совпадает с `project:` в werf.yaml).
+	werf host purge --force --project-name "$APPNAME"
 }
 
 [[ "${#BASH_SOURCE[@]}" -gt "1" ]] && { return 0; }
