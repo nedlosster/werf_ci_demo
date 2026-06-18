@@ -30,7 +30,7 @@ export function App() {
       <h1>app1-java-react</h1>
       <p>Фронт: React + Vite. Бек: Spring Boot.</p>
       <ul>
-        <li>Версия фронта 123: <b>{FRONTEND_VERSION}</b></li>
+        <li>Версия фронта 123456: <b>{FRONTEND_VERSION}</b></li>
         <li>
           Версия бека (через REST):{" "}
           <b>{backendVersion ?? (error ? `ошибка: ${error}` : "загрузка…")}</b>
