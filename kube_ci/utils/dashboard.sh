@@ -33,4 +33,4 @@ else
 fi
 echo "port-forward... (Ctrl-C для выхода)"
 
-exec kc -n "$NS" port-forward "svc/${SVC}" "${PORT}:80"
+exec kubectl --context "$KUBECONTEXT" -n "$NS" port-forward "svc/${SVC}" "${PORT}:80"
