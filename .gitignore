@@ -10,6 +10,16 @@ kube_ci/*/productlist
 # werf: локальные build-артефакты (но НЕ .werf-partial/ -- это исходник)
 .werf/
 
+# build-артефакты продуктов (maven/node/python) -- создаются при сборке и
+# dev-start внутри пода; в git не нужны, держат /workspace-клон чистым.
+apps/**/target/
+apps/**/node_modules/
+apps/**/dist/
+apps/**/.angular/
+apps/**/__pycache__/
+apps/**/*.egg-info/
+apps/*/frontend/package-lock.json
+
 # ssh-ключи dev-схемы (кладёт оператор)
 apps/*/.helm/tmp/
 
