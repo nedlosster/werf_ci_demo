@@ -37,7 +37,10 @@ spec:
       initContainers:
         - name: prepare-dev-env
           image: {{ index .Values.werf.image "backend-dev" }}
-          command: ["sh", "-c", "cd /home/app/prepare-scripts && sudo ./init-dev-env.sh"]
+          command: ["sh", "-c", "cd /home/app/prepare-scripts && sudo -E ./init-dev-env.sh"]
+          env:
+            - { name: GIT_USER_NAME,  value: {{ .Values.git_user_name  | default "" | quote }} }
+            - { name: GIT_USER_EMAIL, value: {{ .Values.git_user_email | default "" | quote }} }
           volumeMounts:
             - { name: workspace, mountPath: /workspace }
             - { name: homeapp, mountPath: /home/app/homeapp }

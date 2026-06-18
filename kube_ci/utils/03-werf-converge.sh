@@ -42,6 +42,12 @@ function deploy()
   custom_tag_args=()
   [ -n "$CI_TAG" ] && custom_tag_args=(--use-custom-tag="%image%-$CI_TAG")
 
+  # git-identity машины деплоя -> в dev-поды (init-dev-env проставит в /workspace).
+  # Берётся из git config деплой-машины, не хардкодится в репозитории.
+  git_set_args=()
+  _gn=$(git config user.name 2>/dev/null);  [ -n "$_gn" ] && git_set_args+=(--set "git_user_name=$_gn")
+  _ge=$(git config user.email 2>/dev/null); [ -n "$_ge" ] && git_set_args+=(--set "git_user_email=$_ge")
+
   werf converge \
     --dev \
     --env="$ENVNAME" \
@@ -56,6 +62,7 @@ function deploy()
     "${custom_tag_args[@]}" \
     --loose-giterminism=true \
     "${ci_set_args[@]}" \
+    "${git_set_args[@]}" \
     --set APPNAME="$APPNAME" \
     --set DOMAIN="$DOMAIN" \
     --set use_ngnix_virtualserver="$USE_NGNIX_VIRTUALSERVER"

@@ -29,4 +29,11 @@ if [ ! -f "$DIR/.gitclone" ]; then
     [ -d "$DIR/werf_ci_demo" ] && { chown -R app "$DIR/werf_ci_demo" 2>/dev/null || true; touch "$DIR/.gitclone"; }
 fi
 
-echo "init-dev-env: готово. Рабочая копия: $DIR/werf_ci_demo/apps/app1-java-react"
+# git-identity из env (converge -> StatefulSet -> sudo -E): проставляем в рабочую
+# копию, чтобы коммиты из dev-пода шли под автором машины деплоя. Запускаем как app.
+if [ -d "$DIR/werf_ci_demo/.git" ]; then
+    [ -n "${GIT_USER_NAME:-}" ]  && sudo -u app git -C "$DIR/werf_ci_demo" config user.name  "$GIT_USER_NAME"  2>/dev/null || true
+    [ -n "${GIT_USER_EMAIL:-}" ] && sudo -u app git -C "$DIR/werf_ci_demo" config user.email "$GIT_USER_EMAIL" 2>/dev/null || true
+fi
+
+echo "init-dev-env: рабочая копия в $DIR/werf_ci_demo/apps/app1-java-react"
