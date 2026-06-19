@@ -95,8 +95,23 @@
   .left-col .theses{align-self:stretch}
   .slide-fig{margin:0; text-align:center; flex:0 0 auto}
   .slide-fig img{max-width:100%; max-height:30vh; object-fit:contain;
-    border:1px solid var(--line); border-radius:8px; background:#fff; padding:5px}
+    border:1px solid var(--line); border-radius:8px; background:#fff; padding:5px;
+    cursor:zoom-in; transition:border-color .15s}
+  .slide-fig img:hover{border-color:var(--accent)}
   .slide-fig figcaption{margin-top:7px; font-size:clamp(11px,1.5vh,14px); color:var(--muted)}
+
+  /* модальное окно крупного просмотра диаграмм */
+  .lightbox{position:fixed; inset:0; z-index:50; display:none; align-items:center;
+    justify-content:center; background:rgba(15,20,28,.9); padding:28px; cursor:zoom-out}
+  .lightbox.open{display:flex}
+  .lightbox img{max-width:96vw; max-height:90vh; object-fit:contain; border-radius:8px;
+    background:#fff; padding:10px; box-shadow:0 12px 48px rgba(0,0,0,.55)}
+  .lightbox .lb-close{position:absolute; top:16px; right:22px; width:42px; height:42px;
+    border:0; border-radius:50%; background:rgba(255,255,255,.12); color:#fff;
+    font-size:26px; line-height:1; cursor:pointer}
+  .lightbox .lb-close:hover{background:rgba(255,255,255,.22)}
+  .lightbox .lb-cap{position:absolute; bottom:18px; left:0; right:0; text-align:center;
+    color:#cdd9e5; font-size:14px}
 
   .theses{margin:0; padding:0; list-style:none; align-self:center}
   .theses li{position:relative; padding-left:30px; margin:clamp(8px,1.8vh,18px) 0;
@@ -183,6 +198,11 @@
   <span class="counter" id="counter">1 / 18</span>
   <button id="next" class="nav-btn" aria-label="Вперёд" title="Вперёд (→)">›</button>
   <button id="fs" class="nav-btn fs" title="Во весь экран (F)">во весь экран</button>
+</div>
+<div class="lightbox" id="lightbox">
+  <button class="lb-close" id="lbClose" title="Закрыть (Esc)">&times;</button>
+  <img alt="">
+  <div class="lb-cap" id="lbCap"></div>
 </div>
 <script>
 const REPO = "https://github.com/nedlosster/werf_ci_demo/blob/main/";
@@ -385,7 +405,8 @@ const BLOCKS = [
         "раннер/агент: docker, werf (trdl), kubectl, helm, доступ к кластеру",
         "переменные: <code>KUBECONFIG</code>, <code>KUBECONTEXT</code>, <code>K8S_NODE_IP</code>, <code>WERF_SECRET_KEY</code> (masked/protected); версия через <code>CI_TAG</code>"
       ], show:"маппинг операций на стадии пайплайна, примеры <code>.gitlab-ci.yml</code> / <code>Jenkinsfile</code>",
-        gh:[{t:"integrations/README.md", p:"docs/integrations/README.md"},{t:"gitlab-ci.md", p:"docs/integrations/gitlab-ci.md"},{t:"jenkins.md", p:"docs/integrations/jenkins.md"},{t:"dora-metrics.md", p:"docs/integrations/dora-metrics.md"}]},
+        gh:[{t:"integrations/README.md", p:"docs/integrations/README.md"},{t:"gitlab-ci.md", p:"docs/integrations/gitlab-ci.md"},{t:"jenkins.md", p:"docs/integrations/jenkins.md"},{t:"dora-metrics.md", p:"docs/integrations/dora-metrics.md"}],
+        img:"industrial-cicd.png", cap:"Промышленный CI/CD: сборка → registry → релиз"},
       {no:16, title:"Хранение секретов", theses:[
         "пароли в <code>.helm/secrets-&lt;env&gt;.yaml</code> зашифрованы werf и коммитятся; plaintext <code>values.yaml</code> — в <code>.gitignore</code>",
         "шаблон <code>.helm/secret-values.yaml.example</code> показывает структуру",
@@ -578,7 +599,23 @@ fsBtn.addEventListener('click', ()=>{
   if(document.fullscreenElement){ document.exitFullscreen(); }
   else { document.documentElement.requestFullscreen?.(); }
 });
+
+// ---- модальное окно (lightbox) для диаграмм ----
+const lb = document.getElementById('lightbox');
+const lbImg = lb.querySelector('img');
+const lbCap = document.getElementById('lbCap');
+function lbOpen(src, cap){ lbImg.src = src; lbCap.textContent = cap || ''; lb.classList.add('open'); }
+function lbClose(){ lb.classList.remove('open'); lbImg.src = ''; }
+function lbIsOpen(){ return lb.classList.contains('open'); }
+deck.addEventListener('click', e=>{
+  const im = e.target.closest('.slide-fig img');
+  if(im){ const cap = im.closest('.slide-fig').querySelector('figcaption'); lbOpen(im.src, cap?cap.textContent:''); }
+});
+lb.addEventListener('click', lbClose);
+document.getElementById('lbClose').addEventListener('click', e=>{ e.stopPropagation(); lbClose(); });
+
 document.addEventListener('keydown', e=>{
+  if(lbIsOpen()){ if(e.key==='Escape'){ e.preventDefault(); lbClose(); } return; }
   if(['ArrowRight','PageDown',' ','Spacebar','Enter'].includes(e.key)){ e.preventDefault(); next(); }
   else if(['ArrowLeft','PageUp'].includes(e.key)){ e.preventDefault(); prev(); }
   else if(e.key==='Home'){ e.preventDefault(); show(0); }

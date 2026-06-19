@@ -344,7 +344,8 @@ dev-сред](../delivery/dev-caches-and-volumes.md),
   masked/protected; версия передаётся через `CI_TAG`.
 
 Показать: [подключение интеграций](../integrations/README.md), маппинг операций
-на стадии; примеры `.gitlab-ci.yml` / `Jenkinsfile`.
+на стадии; схему [industrial-cicd](../pics/industrial-cicd.png); примеры
+`.gitlab-ci.yml` / `Jenkinsfile`.
 
 ### Слайд 16. Хранение секретов
 

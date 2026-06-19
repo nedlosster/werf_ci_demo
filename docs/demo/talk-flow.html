@@ -347,7 +347,8 @@ const BLOCKS = [
         "раннер/агент: docker, werf (trdl), kubectl, helm, доступ к кластеру",
         "переменные: <code>KUBECONFIG</code>, <code>KUBECONTEXT</code>, <code>K8S_NODE_IP</code>, <code>WERF_SECRET_KEY</code> (masked/protected); версия через <code>CI_TAG</code>"
       ], show:"маппинг операций на стадии пайплайна, примеры <code>.gitlab-ci.yml</code> / <code>Jenkinsfile</code>",
-        gh:[{t:"integrations/README.md", p:"docs/integrations/README.md"},{t:"gitlab-ci.md", p:"docs/integrations/gitlab-ci.md"},{t:"jenkins.md", p:"docs/integrations/jenkins.md"},{t:"dora-metrics.md", p:"docs/integrations/dora-metrics.md"}]},
+        gh:[{t:"integrations/README.md", p:"docs/integrations/README.md"},{t:"gitlab-ci.md", p:"docs/integrations/gitlab-ci.md"},{t:"jenkins.md", p:"docs/integrations/jenkins.md"},{t:"dora-metrics.md", p:"docs/integrations/dora-metrics.md"}],
+        img:"industrial-cicd.png", cap:"Промышленный CI/CD: сборка → registry → релиз"},
       {no:16, title:"Хранение секретов", theses:[
         "пароли в <code>.helm/secrets-&lt;env&gt;.yaml</code> зашифрованы werf и коммитятся; plaintext <code>values.yaml</code> — в <code>.gitignore</code>",
         "шаблон <code>.helm/secret-values.yaml.example</code> показывает структуру",

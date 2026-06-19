@@ -158,7 +158,7 @@ backup-слайды из [банка вопросов](qa-bank.md), которы
 - раннер/агент: docker, werf (trdl), kubectl, helm, доступ к кластеру
 - переменные: `KUBECONFIG`, `KUBECONTEXT`, `K8S_NODE_IP`, `WERF_SECRET_KEY` (masked/protected); версия через `CI_TAG`
 
-Показать: [подключение интеграций](../integrations/README.md), [GitLab CI](../integrations/gitlab-ci.md), [Jenkins](../integrations/jenkins.md), [метрики DORA](../integrations/dora-metrics.md).
+Показать: [подключение интеграций](../integrations/README.md), [GitLab CI](../integrations/gitlab-ci.md), [Jenkins](../integrations/jenkins.md), [метрики DORA](../integrations/dora-metrics.md), схема [industrial-cicd](../pics/industrial-cicd.png).
 
 ## Слайд 16. Хранение секретов (блок 9)
 
