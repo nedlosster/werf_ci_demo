@@ -13,7 +13,7 @@
 
     <groupId>com.example.app1</groupId>
     <artifactId>backend</artifactId>
-    <version>0.1.7</version>
+    <version>0.1.8</version>
     <name>app1-java-react-backend</name>
     <description>Демо-бекенд app1-java-react (Spring Boot)</description>
 
