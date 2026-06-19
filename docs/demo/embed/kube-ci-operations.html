@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>kube-ci-operations.md</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    span.underline{text-decoration: underline;}
+    div.column{display: inline-block; vertical-align: top; width: 50%;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+  </style>
+  <link rel="stylesheet" href="embed.css" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">kube-ci-operations.md</h1>
+</header>
+<h1 id="операции-kube_ci">Операции kube_ci</h1>
+<p>Контур <code>kube_ci</code> сведён к четырём базовым операциям над уже развёрнутым кластером: публикация (converge), откат версии (helm rollback), снос (dismiss) и очистка (purge). Каждая запускается одной командой из каталога окружения <code>kube_ci/dev/</code> или <code>kube_ci/prod/</code>; точки входа окружения лишь подключают общие функции из <a href="../../kube_ci/utils/03-werf-converge.sh"><code>kube_ci/utils/</code></a> и подмешивают локальные <code>k8s_defs</code> и <code>productlist</code>. Эта статья описывает, что делает каждая операция и какие скрипты за ней стоят. Пошаговые сценарии не дублируются – они в <a href="../runbooks/deploy.md">runbook деплоя</a> и <a href="../runbooks/rollback.md">runbook отката</a>; модель окружений – в <a href="dev-prod.md">dev-prod</a>.</p>
+<h2 id="сводка">Сводка</h2>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Операция</th>
+<th>Команда (из каталога окружения)</th>
+<th>Библиотека</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Публикация</td>
+<td><code>./pull_products.sh &amp;&amp; ./00-build-deploy.sh [--all\|&lt;product&gt;]</code></td>
+<td><a href="../../kube_ci/utils/03-werf-converge.sh"><code>utils/03-werf-converge.sh</code></a></td>
+</tr>
+<tr class="even">
+<td>Откат версии</td>
+<td><code>./03-rollback.sh &lt;product&gt; [revision]</code></td>
+<td><a href="../../kube_ci/utils/06-rollback.sh"><code>utils/06-rollback.sh</code></a></td>
+</tr>
+<tr class="odd">
+<td>Снос</td>
+<td><code>./01-dismiss.sh &lt;product&gt;\|--all</code></td>
+<td><a href="../../kube_ci/utils/04-dismiss.sh"><code>utils/04-dismiss.sh</code></a></td>
+</tr>
+<tr class="even">
+<td>Очистка</td>
+<td><code>./02-purge-stages.sh</code></td>
+<td><a href="../../kube_ci/utils/05-purge-stages-local.sh"><code>utils/05-purge-stages-local.sh</code></a></td>
+</tr>
+</tbody>
+</table>
+<p>Каждый файл <code>utils/*.sh</code> защищён от двойного выполнения проверкой <code>[[ "${#BASH_SOURCE[@]}" -gt "1" ]] &amp;&amp; return</code>, поэтому работает и как библиотека (<code>source</code>), и как самостоятельный скрипт. Отличия этой копии оркестрации от исходного <code>kube_ci</code> – в <a href="../../kube_ci/README.md">kube_ci/README.md</a>.</p>
+<h2 id="публикация-converge">Публикация (converge)</h2>
+<p>Публикация состоит из двух шагов. Сначала <a href="../../kube_ci/dev/pull_products.sh"><code>pull_products.sh</code></a> готовит продукты: создаёт в каталоге окружения подкаталог <code>products/</code> и связывает в него каждый продукт из <code>productlist</code> symlink’ом на <code>apps/&lt;product&gt;</code>. В демо исходники лежат в репозитории рядом, поэтому вместо <code>git clone</code> – symlink. В CI этот шаг заменяется клонированием, см. <a href="../integrations/gitlab-ci.md">Подключение к GitLab CI</a>.</p>
+<p>Затем <a href="../../kube_ci/dev/00-build-deploy.sh"><code>00-build-deploy.sh</code></a> выкатывает продукты. Без аргументов или с <code>--all</code> он берёт все продукты из <code>productlist</code>, иначе – только перечисленные. Скрипт подключает библиотеку converge, читает <code>productlist</code> и <code>k8s_defs</code>, экспортирует параметры кластера и для каждого выбранного продукта заходит в его каталог и вызывает <code>deploy &lt;env-функция&gt;</code>.</p>
+<p>Сам converge выполняет функция <code>deploy()</code> из <a href="../../kube_ci/utils/03-werf-converge.sh"><code>utils/03-werf-converge.sh</code></a>: активирует werf через <code>trdl</code>, подключает контракт <code>.helm/def.sh</code>, вычисляет целевой неймспейс <code>&lt;NAMESPACE&gt;-&lt;ENVNAME&gt;</code>, подхватывает <code>values-&lt;ENVNAME&gt;.yaml</code> и <code>secrets-&lt;ENVNAME&gt;.yaml</code>, пробрасывает <code>CI_*</code>-переменные в helm и запускает <code>werf converge</code> – одной командой собирает образы, публикует их в реестр и применяет релиз. Пошаговый разбор <code>deploy()</code> – в <a href="../concepts/delivery-to-k8s.md">Доставке в Kubernetes</a>; переменные и файлы, которые контур читает у продукта, – в <a href="../concepts/application-contract.md">Контракте приложения</a>. Тег образов несёт единую версию продукта из файла <code>VERSION</code>, см. <a href="versioning.md">Версионирование</a>; секреты окружения подмешиваются по ключу werf, см. <a href="secrets.md">Управление секретами</a>.</p>
+<p>Один запуск проходит так: инженер или CI вызывает <code>pull_products</code> и <code>00-build-deploy</code>, контур читает контракт и передаёт управление werf, werf собирает образы, кладёт их в registry, рендерит чарт и применяет манифесты через Kubernetes API, после чего postdeploy печатает URL ресурсов.</p>
+<figure>
+<img src="../pics/converge-flow.png" alt="" /><figcaption>Поток werf converge: участники Engineer/CI, kube_ci, werf, registry, Kubernetes API</figcaption>
+</figure>
+<h2 id="откат-версии-helm-rollback">Откат версии (helm rollback)</h2>
+<p><a href="../../kube_ci/dev/03-rollback.sh"><code>03-rollback.sh</code></a> возвращает релиз продукта на ранее опубликованную ревизию. Под капотом <a href="../../kube_ci/utils/06-rollback.sh"><code>utils/06-rollback.sh</code></a> подключает контракт, вызывает env-функцию, вычисляет имя релиза <code>${APPNAME}-${ENVNAME}</code> и неймспейс <code>&lt;NAMESPACE&gt;-&lt;ENVNAME&gt;</code>, после чего работает с историей релиза через <code>helm</code>.</p>
+<p>Это операция на случай чрезвычайной ситуации: образ целевой ревизии уже лежит в registry, поэтому возврат проходит за секунды – без пересборки и без исходного кода целевой версии. Откат не переразворачивает образы из рабочего дерева, а переключает релиз на сохранённую ревизию helm.</p>
+<p>Скрипт требует явного ключа продукта – по умолчанию он не работает по <code>--all</code>, как и снос. Без аргумента <code>03-rollback.sh</code> завершается с ошибкой и печатает список доступных продуктов. Дальше поведение зависит от второго аргумента:</p>
+<ul>
+<li><code>&lt;product&gt;</code> без <code>revision</code> – скрипт печатает <code>helm history</code> релиза в неймспейсе окружения: каждая строка – ревизия с датой, статусом и <code>APP   VERSION</code> (версия продукта, она же <code>CI_TAG</code> ревизии). Это список версий, из которого выбирают цель отката;</li>
+<li><code>&lt;product&gt; &lt;revision&gt;</code> – скрипт печатает предупреждение про БД, проверяет наличие тегов образа продукта в registry через HTTP API v2 (<code>/v2/&lt;APPNAME&gt;/tags/list</code>) и выполняет <code>helm rollback &lt;release&gt; &lt;revision&gt;</code>.</li>
+</ul>
+<h3 id="список-версий-через-helm-history">Список версий через helm history</h3>
+<p>Доступные для отката версии хранит сам helm: каждая публикация через converge создаёт новую ревизию релиза. <code>helm history</code> по релизу <code>${APPNAME}-${ENVNAME}</code> в неймспейсе <code>&lt;NAMESPACE&gt;-&lt;ENVNAME&gt;</code> даёт сопоставление ревизия -&gt; <code>APP VERSION</code> (<code>CI_TAG</code>), дата, статус. Контур не тегирует версии в git (см. <a href="versioning.md">Версионирование</a>: <code>VERSION</code> -&gt; <code>CI_TAG</code>, <code>set-version.sh</code> делает только <code>git add</code>), поэтому история helm-релиза – единственный реестр того, какие версии продукта уже выкатывались в это окружение.</p>
+<h3 id="ограничение-бд-не-откатывается">Ограничение: БД не откатывается</h3>
+<p><code>helm rollback</code> возвращает только релиз продукта – Deployment-ы, Service-ы, ConfigMap-ы, Secret-ы. Схема и данные PostgreSQL остаются как есть: Postgres держит данные на persistent-томе, а <code>init.sql</code> применяется только при первой инициализации пустого тома. Если между текущей и целевой версией была forward-несовместимая миграция схемы, откат релиза вернёт старый код поверх новой схемы. Приведение схемы к целевой версии – отдельный ручной шаг, в ядро отката он не входит; скрипт печатает об этом предупреждение перед <code>helm rollback</code>.</p>
+<h3 id="откат-против-промоута-конкретной-версии">Откат против промоута конкретной версии</h3>
+<p>Откат через <code>helm rollback</code> – не единственный способ оказаться на нужной версии, но единственный пригодный для чрезвычайной ситуации. Промоут конкретной версии повторным converge тоже возможен, но требует git-ref той версии в рабочем дереве: converge переразворачивает образы из текущего состояния репозитория, а не из сохранённой ревизии. Контур версии в git не тегирует, поэтому быстро встать на произвольную прошлую версию через converge нельзя – для этого пришлось бы вручную восстановить рабочее дерево той версии и пересобрать образы. Для быстрого возврата после неудачной выкатки используют <code>03-rollback.sh</code>.</p>
+<h2 id="снос-dismiss">Снос (dismiss)</h2>
+<p><a href="../../kube_ci/dev/01-dismiss.sh"><code>01-dismiss.sh</code></a> снимает релиз целиком. Под капотом <a href="../../kube_ci/utils/04-dismiss.sh"><code>utils/04-dismiss.sh</code></a> подключает контракт, вызывает env-функцию и выполняет <code>werf dismiss --with-namespace</code> – сносит релиз вместе с его неймспейсом. Это не откат версии: снос удаляет развёртывание, а не переключает его на прошлую ревизию.</p>
+<p>Скрипт требует явного аргумента: один или несколько ключей продуктов либо <code>--all</code>. Без аргумента он отказывается работать и завершается с ошибкой – иначе обход <code>productlist</code> снял бы все продукты разом. Если переданный аргумент не совпал ни с одним продуктом, скрипт тоже завершается с ошибкой и печатает список доступных ключей. Эта защита особенно важна для prod, где снос – точка остановки (см. <a href="dev-prod.md">dev-prod</a>).</p>
+<h2 id="очистка-purge">Очистка (purge)</h2>
+<p><a href="../../kube_ci/dev/02-purge-stages.sh"><code>02-purge-stages.sh</code></a> сбрасывает локальный кеш стадий сборки werf. Через <a href="../../kube_ci/utils/05-purge-stages-local.sh"><code>utils/05-purge-stages-local.sh</code></a> он вызывает <code>werf stages purge --stages-storage=:local</code> по каждому продукту из <code>productlist</code>. Это освобождает место, а следующая сборка идёт с нуля. Очистка не трогает развёрнутые релизы – это операция над кешем сборщика, а не над кластером.</p>
+<p>Более жёсткий вариант – <a href="../../kube_ci/utils/10-purge-werf-registry.sh"><code>utils/10-purge-werf-registry.sh</code></a>: он запускает <code>werf host cleanup</code> и <code>werf host purge</code> и удаляет docker-образы werf по шаблонам <code>werf-images</code>, <code>werf-stages</code>, <code>werf-managed</code>. Этот скрипт не привязан к окружению и работает по всему хосту сборки.</p>
+<h2 id="типовая-топология-окружения">Типовая топология окружения</h2>
+<p>Топология dev и prod идентична – различаются только параметры окружения: <code>ENVNAME</code>, неймспейс <code>&lt;NAMESPACE&gt;-&lt;ENVNAME&gt;</code>, хост ingress в <code>CI_URL</code>, <code>KUBECONTEXT</code> и <code>REGISTRY</code> из <code>k8s_defs</code>. Схема ниже показывает путь от рабочей машины (только <code>git push</code>) через машину деплоя (<code>git pull</code> плюс прогон <code>kube_ci</code>) к кластеру окружения: converge выкатывает релиз и пушит образы в registry, откат переключает релиз на прошлую ревизию, а внутри кластера ingress ведёт на сервисы продукта, Postgres и pgAdmin.</p>
+<figure>
+<img src="../pics/deploy-topology.png" alt="" /><figcaption>Типовая топология развёртывания окружения dev/prod: рабочая машина, машина деплоя, kube_ci, кластер, registry</figcaption>
+</figure>
+<h2 id="плюсы-минусы-безопасность">Плюсы, минусы, безопасность</h2>
+<p>Плюсы. Весь жизненный цикл доставки сведён к небольшому набору команд с предсказуемым поведением; логика вынесена в общие библиотеки и не дублируется между окружениями. Откат отделён от сноса: неудачную выкатку возвращают за секунды через <code>helm rollback</code>, не пересобирая образы.</p>
+<p>Минусы. Снос и очистка <code>dismiss</code>/<code>purge</code> – разрушающие операции; защита от случайного запуска есть только у сноса (обязательный аргумент), очистка кеша выполняется без подтверждения. Откат версии не трогает БД, поэтому при несовместимой миграции схему приводят к целевой версии вручную.</p>
+<p>Безопасность. Операции prod – точка остановки, запускаются только с разрешения оператора; общий для dev и prod кластер усиливает цену ошибки. Разбор рисков – в <a href="../concepts/security-and-tradeoffs.md">Компромиссах и безопасности схемы</a>.</p>
+<h2 id="связанные-статьи">Связанные статьи</h2>
+<ul>
+<li><a href="dev-prod.md">Один контур, два окружения</a></li>
+<li><a href="secrets.md">Управление секретами</a></li>
+<li><a href="versioning.md">Версионирование</a></li>
+<li><a href="../concepts/delivery-to-k8s.md">Доставка в Kubernetes</a></li>
+<li><a href="../runbooks/deploy.md">Runbook деплоя</a></li>
+<li><a href="../runbooks/rollback.md">Runbook отката версии</a></li>
+<li><a href="../../kube_ci/README.md">kube_ci/README.md</a></li>
+<li><a href="../integrations/gitlab-ci.md">Подключение к GitLab CI</a></li>
+</ul>
+</body>
+</html>

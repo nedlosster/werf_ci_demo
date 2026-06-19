@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>dev-in-cluster.md</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    span.underline{text-decoration: underline;}
+    div.column{display: inline-block; vertical-align: top; width: 50%;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  <link rel="stylesheet" href="embed.css" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">dev-in-cluster.md</h1>
+</header>
+<h1 id="разработка-внутри-кластера-dev-схема">Разработка внутри кластера (dev-схема)</h1>
+<p>dev-вариант продукта разворачивается в Kubernetes как долгоживущий под-песочница (<code>sleep infinity</code>), к которому разработчик подключается через VS Code Remote и пишет код прямо в поде. Эта статья описывает dev-схему: что именно рендерит окружение <code>dev</code> вместо prod-Deployment’ов, как persistent-volume’ы сохраняют исходники и кеши между перезапусками, как под инициализируется и как к нему подключиться. Сама модель окружений и переключение dev/prod – в <a href="dev-prod.md">dev-prod</a>; запуск выкатки – в <a href="kube-ci-operations.md">Операциях kube_ci</a>.</p>
+<p>В демо схема реализована для обоих продуктов: app1-java-react (бек Spring Boot, фронт React+Vite) и app2-python-angular (бек FastAPI, фронт Angular). Поды различаются только базовым образом и командой запуска dev-сервера.</p>
+<h2 id="что-разворачивается-в-dev">Что разворачивается в dev</h2>
+<p><code>env=dev</code> (values-dev.yaml) рендерит вместо prod-Deployment’ов: - <code>app1-java-react-backend-dev</code> – StatefulSet, образ <code>backend-dev</code> (полный maven+JDK), <code>sleep infinity</code>; - <code>app1-java-react-frontend-dev</code> – StatefulSet, образ <code>frontend-dev</code> (полный node+pnpm), <code>sleep infinity</code>; - PostgreSQL и pgAdmin (pgAdmin только в dev), ingress.</p>
+<h2 id="зачем-dev-в-кластере-а-не-docker-compose">Зачем dev в кластере, а не docker-compose</h2>
+<p>Тезис схемы: dev-окружение идентично prod, потому что собрано из тех же кубовых объектов, и в нём отлаживается сама k8s-логика, а не одни контейнеры. docker-compose на машине разработчика моделирует контейнеры и docker-сеть – это другая модель, в которой Kubernetes-слоя нет вовсе.</p>
+<p>Ключевое:</p>
+<ol type="1">
+<li>Тот же Kubernetes и те же манифесты, что в prod: <code>.helm</code>-чарт, Ingress, Service, StatefulSet с Postgres, неймспейсы, ConfigMap и Secret. Среды совпадают по устройству, и класс расхождений «локально работало, в кластере нет» почти исчезает. docker-compose воспроизвёл бы только контейнеры и docker-сеть.</li>
+<li>Отлаживается то, чего docker-compose не показывает: Ingress-маршрутизация (<code>/api</code>, <code>/pgadmin</code>, host по nip.io, nginx-аннотации, rewrite); service discovery по DNS и <code>targetPort</code>; readiness/liveness-пробы, поведение rollout, стратегия <code>updateStrategy: OnDelete</code> у Postgres; монтирование Secret и ConfigMap, init-контейнеры, семантика PVC и StatefulSet; сам <code>werf converge</code> с giterminism и хуками predeploy/postdeploy.</li>
+</ol>
+<p>Эксплуатационные:</p>
+<ol start="3" type="1">
+<li>Один артефакт доставки без дрейфа. dev и prod различаются только окружением в <a href="../../apps/README.md">.helm/def.sh</a>; compose стал бы вторым параллельным артефактом рядом с чартом – двойная поддержка и рассинхрон.</li>
+<li>Реальная инфраструктура кластера. dev-под видит настоящий Ingress-контроллер, storage-class, CNI, DNS, preprod-сервисы и базы напрямую, без VPN и port-forward.</li>
+<li>Тяжёлое – на сервере, клиент лёгкий. Сборка (maven, node, pip), кеши и базы живут на ноде кластера; VS Code Remote – только редактор и не нагружает ноутбук.</li>
+<li>Персистентность и быстрый рестарт. PVC <code>workspace</code> и <code>homeapp</code> держат клон, <code>node_modules</code>, <code>.m2</code> и кеши между пересозданиями пода – разбор в <a href="dev-caches-and-volumes.md">Кешах и persistent-volume’ах dev-сред</a>.</li>
+<li>Воспроизводимый онбординг. Среду задаёт dev-образ (локаль, таймзона, утилиты, ssh) – она одинакова у всех, локальный тулчейн (Docker Desktop, версии JDK, Node, Python) не нужен.</li>
+<li>Меньше зависимости от хоста. Нет расхождений по ОС разработчика (file-watching, права, версия Docker) – всё исполняется в Linux-поде.</li>
+<li>Демо-ценность. dev и prod проходят одним механизмом, что подтверждает: контур не привязан к окружению.</li>
+</ol>
+<h2 id="цена-подхода-налог-на-сопровождение">Цена подхода: налог на сопровождение</h2>
+<p>Паритет dev и prod не бесплатен. За идентичность среды и возможность отлаживать саму k8s-логику схема берёт постоянную плату – не разовую настройку, а налог, который платится при каждом запуске dev-сервера, каждом рестарте пода и каждой правке dev-формы. Ниже собрано то, что docker-compose не требует.</p>
+<p>Запуск dev-серверов остаётся ручным и неочевидным. Каждая строка <code>dev-start.sh</code> – след набитой шишки, и команды нельзя упростить до «как в документации инструмента». Фронты ставят зависимости через <code>npm</code>, а не corepack/pnpm: corepack падает на записи кеша в поде (<code>.cache/node/corepack</code>). Бинарь запускают из локального <code>./node_modules/.bin</code> (<code>vite</code>, <code>ng</code>), потому что <code>npx ng</code> тянет посторонний пакет. Бекенд app2 поднимает <code>uvicorn</code> без <code>--reload</code>: в detached-запуске супервизор не выживает – процесс переусыновляется к PID 1, и watcher сбрасывается. Слушать нужно строго <code>0.0.0.0:8080</code> – это <code>targetPort</code> dev-Service. Фронты отвечают через ingress только при заданном <code>allowedHosts</code> (<code>.nip.io</code>) в <a href="../../apps/app1-java-react/frontend/vite.config.ts">vite.config.ts</a> и <a href="../../apps/app2-python-angular/frontend/angular.json">angular.json</a>; без него ingress отдаёт 403.</p>
+<p>Состояние пода эфемерно и порождает гонки. site-packages бекенда и user-site (<code>pip install --user</code>) живут только до пересоздания пода, если их не вынести на PVC симлинками <code>~/.local</code> и <code>~/.npm</code> на том <code>homeapp</code> – разбор в <a href="dev-caches-and-volumes.md">Кешах и persistent-volume’ах dev-сред</a>. Порт 8080 требует чистого старта: повторный запуск без остановки прежнего процесса конфликтует. А detached-запуск упирается в то же переусыновление к PID 1, из-за которого <code>uvicorn --reload</code> и был убран.</p>
+<p>Схема привязана к живому кластеру. Полноценная оффлайн-разработка затруднена: под, его база и ingress существуют только в кластере. Remote-редактирование добавляет сетевые задержки до кластера на каждое сохранение и навигацию. Долгоживущие dev-поды (<code>sleep infinity</code>) держат CPU, RAM и диск под PVC всё время, пока окружение существует, – даже когда никто в них не работает.</p>
+<p>Доступ к коду и его обновление тоже на сопровождении. <code>git pull</code> в поде идёт по SSH и требует Secret <code>id-rsa-vcs</code> с приватным ключом плюс запечённого в <code>Dockerfile.dev</code> блока <code>ssh_config</code> для <code>github.com</code>. Первичная настройка dev-образа (локаль, таймзона, утилиты отладки) – отдельный слой поверх прод-обвязки, который надо поддерживать.</p>
+<p>Наконец, сопровождается сама dev-форма. Отдельные <code>Dockerfile.dev</code>, <code>init-dev-env.sh</code> и dev-StatefulSet’ы (шаблоны <code>031-*-dev</code>, <code>041-*-dev</code>) живут рядом с прод-образами и прод-Deployment’ами. Это двойная поддержка: правка, затрагивающая обе формы, вносится дважды, и dev/prod-формы дрейфуют, если синхронизировать их вручную забывают.</p>
+<p>Налог окупается там, где ценен паритет dev и prod и нужна отладка самой k8s-логики – маршрутизации ingress, service discovery, проб, PVC, <code>werf converge</code> с хуками. Для простых компонентов без кубовой специфики или для работы в офлайне docker-compose обходится дешевле: меньше движущихся частей, нет зависимости от кластера, запуск ближе к документации инструментов. Поверхность атаки dev-пода с примонтированным ssh-ключом и связанные компромиссы разобраны в <a href="../concepts/security-and-tradeoffs.md">Компромиссах и безопасности схемы</a>.</p>
+<p>Сравнение с docker-compose – лишь одна ось. Тот же выбор «минимализм против готового UX» встаёт при сравнении схемы с inner-loop-инструментами (Tilt, Skaffold, okteto, Telepresence) и push-доставки с GitOps-операторами – разбор в <a href="dev-in-cluster-vs-tools.md">dev-в-кластере против inner-loop-инструментов и GitOps</a>.</p>
+<h2 id="донастройка-dev-образов">Донастройка dev-образов</h2>
+<p>Поверх базовой обвязки (git, openssh-client, sudo, procps, ca-certificates) <code>Dockerfile.dev</code> всех четырёх компонентов добавляет набор для разработки и отладки внутри пода:</p>
+<ul>
+<li>локаль <code>en_US.UTF-8</code> (пакет <code>locales</code> + генерация через <code>locale-gen</code>);</li>
+<li>таймзону <code>Europe/Moscow</code> (<code>tzdata</code>), переменные <code>ENV LANG</code>, <code>LC_ALL</code>, <code>TZ</code>, <code>TERM</code>;</li>
+<li>утилиты: <code>mc</code>, <code>curl</code>, <code>wget</code>, <code>less</code>, <code>jq</code>, <code>vim</code>, <code>iputils-ping</code>, <code>dnsutils</code>, <code>net-tools</code>, <code>telnet</code>, <code>socat</code>, <code>zip</code>, <code>tree</code>, <code>postgresql-client</code>.</li>
+</ul>
+<p>Локаль dev-образов (<code>en_US.UTF-8</code>) отличается от прод-бекендов. Runtime-стадия прод-<code>Dockerfile</code> бекендов задаёт встроенную <code>C.UTF-8</code> (<code>ENV LANG</code>, <code>LC_ALL</code>) без пакета <code>locales</code>; этого хватает для не-ASCII в логах и I/O. Без неё <code>file.encoding</code> на JRE 17 уходит в ASCII. Прод-фронты (nginx-alpine, статика) локаль не задают – она им не нужна.</p>
+<p>На локаль и collation базы образ приложения не влияет: PostgreSQL – отдельный контейнер, кодировку он фиксирует при initdb внутри postgres-образа.</p>
+<h2 id="persistent-volumeы-на-каждый-dev-под">Persistent-volume’ы (на каждый dev-под)</h2>
+<p><code>volumeClaimTemplates</code> StatefulSet’а создаёт два PVC:</p>
+<table>
+<thead>
+<tr class="header">
+<th>PVC</th>
+<th>Mount</th>
+<th>Назначение</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>workspace</code></td>
+<td><code>/workspace</code></td>
+<td>клон монорепо werf_ci_demo (исходники)</td>
+</tr>
+<tr class="even">
+<td><code>homeapp</code></td>
+<td><code>/home/app/homeapp</code></td>
+<td>кеши пакетов + <code>.vscode-server</code></td>
+</tr>
+</tbody>
+</table>
+<p>В dev-образе из <code>~/</code> сделаны симлинки в <code>/home/app/homeapp</code>: - backend: <code>~/.m2</code> (maven), <code>~/.vscode-server</code>, <code>~/.config</code>; - frontend: <code>~/.local/share/pnpm</code> (pnpm store), <code>~/.cache</code>, <code>~/.vscode-server</code>, <code>~/.config</code>.</p>
+<p>Поэтому кеш пакетов и расширения/настройки VS Code пишутся в PVC <code>homeapp</code> и не теряются при пересоздании пода или перезапуске ВМ. Детальный разбор обоих томов, симлинков кешей по компонентам и жизненного цикла PVC – <a href="dev-caches-and-volumes.md">Кеши и persistent-volume’ы dev-сред</a>.</p>
+<h2 id="инициализация-initcontainer">Инициализация (initContainer)</h2>
+<p><code>initContainer</code> запускает <code>install/prepare-scripts/init-dev-env.sh</code>: 1. создаёт каталоги кешей в <code>/home/app/homeapp</code>; 2. подкладывает ssh-ключ (Secret <code>id-rsa-vcs</code> из <code>.helm/tmp/id_rsa-vcs</code>); 3. <strong>однократно</strong> клонирует <code>werf_ci_demo</code> в <code>/workspace</code> (маркер <code>.gitclone</code>).</p>
+<p>Рабочая копия продукта: <code>/workspace/werf_ci_demo/apps/app1-java-react/{backend,frontend}</code>.</p>
+<h2 id="подключение-vs-code">Подключение VS Code</h2>
+<div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true"></a><span class="ex">kubectl</span> --context <span class="op">&lt;</span>ctx<span class="op">&gt;</span> -n app1-java-react-dev get pods</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true"></a><span class="co"># подключиться VS Code Remote (Kubernetes/SSH) к поду *-backend-dev или *-frontend-dev,</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true"></a><span class="co"># открыть папку /workspace/werf_ci_demo/apps/app1-java-react/&lt;backend|frontend&gt;</span></span></code></pre></div>
+<p>Внутри пода доступны сборочные инструменты (maven, node, python/pip), git и набор утилит отладки. Сборка и запуск – руками в поде. <code>.vscode-server</code> ставится один раз и переживает перезапуски (живёт в PVC <code>homeapp</code>).</p>
+<h2 id="запуск-dev-сервера-в-поде">Запуск dev-сервера в поде</h2>
+<p>dev-сервер поднимают скриптом <code>dev-start.sh</code> из каталога компонента внутри пода (через VS Code Remote или <code>kubectl exec</code>). Скрипты лежат рядом с исходниками и попадают в под вместе с клоном в <code>/workspace</code>.</p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Компонент</th>
+<th>Скрипт</th>
+<th>Команда запуска</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>app1-java-react backend</td>
+<td><a href="../../apps/app1-java-react/backend/dev-start.sh">backend/dev-start.sh</a></td>
+<td><code>mvn -q -DskipTests spring-boot:run</code> (Spring Boot на <code>0.0.0.0:8080</code>, context-path <code>/api</code>, actuator <code>8081</code>)</td>
+</tr>
+<tr class="even">
+<td>app1-java-react frontend</td>
+<td><a href="../../apps/app1-java-react/frontend/dev-start.sh">frontend/dev-start.sh</a></td>
+<td><code>npm install</code> + <code>./node_modules/.bin/vite --host 0.0.0.0 --port 8080</code></td>
+</tr>
+<tr class="odd">
+<td>app2-python-angular backend</td>
+<td><a href="../../apps/app2-python-angular/backend/dev-start.sh">backend/dev-start.sh</a></td>
+<td><code>pip install --user -e .</code> + <code>python -m uvicorn app2.main:app --host 0.0.0.0 --port 8080</code></td>
+</tr>
+<tr class="even">
+<td>app2-python-angular frontend</td>
+<td><a href="../../apps/app2-python-angular/frontend/dev-start.sh">frontend/dev-start.sh</a></td>
+<td><code>npm install</code> + <code>./node_modules/.bin/ng serve --host 0.0.0.0 --port 8080</code></td>
+</tr>
+</tbody>
+</table>
+<p>Пример запуска бекенда app1 из подключённого пода:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true"></a><span class="bu">cd</span> /workspace/werf_ci_demo/apps/app1-java-react/backend</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true"></a><span class="ex">./dev-start.sh</span></span></code></pre></div>
+<p>Снаружи доступна обёртка <a href="../../kube_ci/utils/dev-run.sh">dev-run.sh</a> (<code>./dev-run.sh &lt;product&gt; &lt;backend|frontend&gt; [shell|run]</code>): <code>shell</code> даёт интерактивный bash в поде, <code>run</code> запускает dev-сервер через <code>kubectl exec</code>. Штатный путь – всё же <code>dev-start.sh</code> внутри пода.</p>
+<p>Команды в <code>dev-start.sh</code> подобраны под поведение инструментов в поде и не сводятся к запуску «как в документации»: <code>npm</code> вместо corepack/pnpm, бинарь из <code>./node_modules/.bin</code>, <code>uvicorn</code> без <code>--reload</code>, строгий <code>0.0.0.0:8080</code>, <code>allowedHosts</code> под ingress. Каждый из этих выборов и его причина разобраны выше в разделе <a href="#цена-подхода-налог-на-сопровождение">Цена подхода: налог на сопровождение</a>.</p>
+<h2 id="обновление-рабочей-копии-git-pull-по-ssh">Обновление рабочей копии (git pull по SSH)</h2>
+<p>Исходники в <code>/workspace</code> обновляют через <code>git pull</code> по SSH из каталога рабочей копии от пользователя <code>app</code>. Приватный ключ монтируется Secret’ом <code>id-rsa-vcs</code> в <code>~/.ssh/id_rsa</code>. В <code>/etc/ssh/ssh_config</code> dev-образы (<code>Dockerfile.dev</code>) запекают блок для <code>github.com</code> (<code>StrictHostKeyChecking no</code>, <code>UserKnownHostsFile=/dev/null</code>), так что <code>git pull</code> обходится без <code>known_hosts</code>:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true"></a><span class="bu">cd</span> /workspace/werf_ci_demo</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true"></a><span class="fu">git</span> pull</span></code></pre></div>
+<h2 id="предусловия">Предусловия</h2>
+<ul>
+<li>Приватный clone требует ssh-ключ: положить приватный ключ в <code>apps/app1-java-react/.helm/tmp/id_rsa-vcs</code> (в <code>.gitignore</code>) перед <code>converge</code>. Без ключа под поднимется, но репозиторий нужно склонировать в <code>/workspace</code> вручную.</li>
+<li><code>storageClass</code> (по умолчанию <code>standard</code>) должен существовать в кластере.</li>
+</ul>
+<h2 id="деплой">Деплой</h2>
+<div class="sourceCode" id="cb4"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true"></a><span class="bu">cd</span> kube_ci/dev</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true"></a><span class="ex">./pull_products.sh</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true"></a><span class="ex">./00-build-deploy.sh</span> app1-java-react   # werf соберёт dev-образы и развернёт dev-поды</span></code></pre></div>
+<p>Хук предеплоя, инъекция ssh-ключа и связанный риск разобраны в <a href="../concepts/security-and-tradeoffs.md">Компромиссах и безопасности схемы</a>.</p>
+<h2 id="связанные-статьи">Связанные статьи</h2>
+<ul>
+<li><a href="dev-prod.md">Один контур, два окружения</a></li>
+<li><a href="dev-workflow-cycle.md">Типовой цикл работы в dev-поде</a></li>
+<li><a href="dev-in-cluster-vs-tools.md">dev-в-кластере против inner-loop-инструментов и GitOps</a></li>
+<li><a href="dev-caches-and-volumes.md">Кеши и persistent-volume’ы dev-сред</a></li>
+<li><a href="kube-ci-operations.md">Операции kube_ci</a></li>
+<li><a href="secrets.md">Управление секретами</a></li>
+<li><a href="../kubernetes/specifications.md">Спецификации Kubernetes</a></li>
+<li><a href="../concepts/delivery-to-k8s.md">Доставка в Kubernetes</a></li>
+<li><a href="../concepts/security-and-tradeoffs.md">Компромиссы и безопасность схемы</a></li>
+<li><a href="../products/app1-java-react.md">app1-java-react</a></li>
+</ul>
+</body>
+</html>

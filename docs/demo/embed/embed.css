@@ -1,0 +1,33 @@
+/* Стиль встраиваемых страниц документации для talk-deck.html.
+   Светлая палитра под talk-flow. Генерируется вместе с embed/*.html
+   через scripts/demo/build-embeds.sh. */
+:root{
+  --ink:#1b2430; --muted:#5c6775; --accent:#1f6feb; --line:#d6dce4; --code:#f0f2f5;
+}
+*{box-sizing:border-box}
+html{font-size:15px}
+body{
+  margin:0; padding:22px 26px 40px; color:var(--ink); background:#fff;
+  font:1rem/1.6 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,h4{line-height:1.25; letter-spacing:-.3px}
+h1{font-size:1.7rem; margin:.2em 0 .6em; padding-bottom:.3em; border-bottom:2px solid var(--line)}
+h2{font-size:1.35rem; margin:1.4em 0 .5em; padding-bottom:.25em; border-bottom:1px solid var(--line)}
+h3{font-size:1.12rem; margin:1.2em 0 .4em}
+p,li{font-size:1rem}
+a{color:var(--accent); text-decoration:none}
+a:hover{text-decoration:underline}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  background:var(--code); padding:.08em .4em; border-radius:5px; font-size:.88em}
+pre{background:var(--code); border:1px solid var(--line); border-radius:8px;
+  padding:14px 16px; overflow:auto}
+pre code{background:none; padding:0}
+blockquote{margin:1em 0; padding:.4em 1em; color:var(--muted);
+  border-left:4px solid var(--line)}
+table{border-collapse:collapse; width:100%; margin:1em 0; font-size:.95rem}
+th,td{border:1px solid var(--line); padding:7px 11px; text-align:left; vertical-align:top}
+th{background:#f3f6fa}
+ul,ol{padding-left:1.4em}
+img{max-width:100%}
+hr{border:0; border-top:1px solid var(--line); margin:1.6em 0}

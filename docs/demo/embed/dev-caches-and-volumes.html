@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>dev-caches-and-volumes.md</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    span.underline{text-decoration: underline;}
+    div.column{display: inline-block; vertical-align: top; width: 50%;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  <link rel="stylesheet" href="embed.css" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">dev-caches-and-volumes.md</h1>
+</header>
+<h1 id="кеши-и-persistent-volumeы-dev-сред">Кеши и persistent-volume’ы dev-сред</h1>
+<p>dev-под – долгоживущая песочница (<code>sleep infinity</code>), к которой разработчик подключается через VS Code Remote. При каждом пересоздании пода сборка, установка зависимостей и клон монорепо запускались бы заново, поэтому их результаты вынесены на persistent-volume’ы. Статья разбирает, какие тома объявляет dev-StatefulSet, как симлинки из домашнего каталога перенаправляют кеши пакетных менеджеров на PVC и что переживает рестарт пода, перезагрузку ВМ и смену версии образа. Саму dev-схему (что рендерит окружение, подключение, запуск dev-серверов) описывает <a href="dev-in-cluster.md">Разработка внутри кластера</a>.</p>
+<h2 id="зачем-выносить-состояние-на-тома">Зачем выносить состояние на тома</h2>
+<p>Контейнер dev-пода не запускает приложение – он спит, а сборку и dev-серверы разработчик поднимает вручную внутри пода. Полезное состояние такой песочницы (склонированный исходник, скачанные зависимости, артефакты сборки) накапливается в runtime и в образ не входит. Без отдельного хранилища оно пропадало бы при каждом пересоздании пода: <code>converge</code> с обновлённым шаблоном, bump версии образа, перепланировка пода на другую ноду, перезагрузка ВМ. Восстановление означало бы повторный клон репозитория и повторную закачку всех пакетов из сети.</p>
+<p>Отсюда два PVC на каждый под. Первый клон и первая установка зависимостей выполняются единожды; дальше под собирается из локального кеша без обращения к сети.</p>
+<h2 id="два-pvc-на-каждый-под">Два PVC на каждый под</h2>
+<p>dev-StatefulSet объявляет <code>volumeClaimTemplates</code> с двумя томами. На каждый свой под StatefulSet создаёт отдельную пару PVC, поэтому тома не общие: у каждого из четырёх dev-подов своя пара. Шаблон – например, <a href="../../apps/app1-java-react/.helm/templates/031-backend-dev.yaml">031-backend-dev.yaml</a> для бекенда app1; у трёх остальных компонентов он структурно идентичен.</p>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Том</th>
+<th>mountPath</th>
+<th>Размер</th>
+<th>Содержимое</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>workspace</code></td>
+<td><code>/workspace</code></td>
+<td>5Gi</td>
+<td>клон монорепо (<code>/workspace/werf_ci_demo</code>), исходники, <code>node_modules</code> компонентов, артефакты сборки (<code>target/</code>, <code>dist/</code>, <code>.angular/</code>)</td>
+</tr>
+<tr class="even">
+<td><code>homeapp</code></td>
+<td><code>/home/app/homeapp</code></td>
+<td>5Gi</td>
+<td>каталоги кешей пакетных менеджеров, подключённые симлинками из <code>~/</code></td>
+</tr>
+</tbody>
+</table>
+<p>Размеры и <code>storageClassName</code> берутся из values чарта (<code>dev.workspaceSize</code>, <code>dev.homeappSize</code>, <code>dev.storageClass</code>; по умолчанию <code>5Gi</code>, <code>5Gi</code>, <code>standard</code>). Оба тома монтируются и в init-контейнер <code>prepare-dev-env</code>, и в основной контейнер.</p>
+<p>Имена PVC StatefulSet формирует как <code>&lt;том&gt;-&lt;под&gt;</code>, например <code>workspace-app1-java-react-backend-dev-0</code> и <code>homeapp-app1-java-react-backend-dev-0</code>. На четыре dev-пода (два компонента в каждом из двух продуктов) приходится восемь PVC. Физически тома лежат на диске ноды через <code>storageClass</code> <code>standard</code>, но это раздельные claim’ы с раздельными каталогами – не общий каталог.</p>
+<p>Распределение содержимого по томам:</p>
+<table>
+<thead>
+<tr class="header">
+<th>Под</th>
+<th>workspace</th>
+<th>homeapp</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>app1 backend</td>
+<td>клон, исходники, <code>target/</code></td>
+<td><code>~/.m2</code> (maven)</td>
+</tr>
+<tr class="even">
+<td>app1 frontend</td>
+<td>клон, исходники, <code>node_modules</code>, <code>dist/</code></td>
+<td><code>~/.npm</code>, <code>~/.cache</code></td>
+</tr>
+<tr class="odd">
+<td>app2 backend</td>
+<td>клон, исходники</td>
+<td><code>~/.cache</code> (pip), <code>~/.local</code> (<code>pip install --user</code>)</td>
+</tr>
+<tr class="even">
+<td>app2 frontend</td>
+<td>клон, исходники, <code>node_modules</code>, <code>.angular/</code></td>
+<td><code>~/.npm</code>, <code>~/.cache</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="механизм-симлинков">Механизм симлинков</h2>
+<p>Пакетные менеджеры пишут кеши в фиксированные пути под домашним каталогом (<code>~/.m2</code>, <code>~/.npm</code>, <code>~/.cache</code>, <code>~/.local</code>). На том <code>homeapp</code> эти пути перенаправляются в два шага.</p>
+<ol type="1">
+<li>На этапе сборки образа <code>Dockerfile.dev</code> заменяет каждый такой каталог симлинком на соответствующий подкаталог <code>/home/app/homeapp</code> – например <code>ln -sfn /home/app/homeapp/.m2 /home/app/.m2</code>. На момент сборки целевой каталог пуст: том <code>homeapp</code> ещё не смонтирован.</li>
+<li>При старте пода init-контейнер выполняет <a href="../../apps/app1-java-react/install/prepare-scripts/init-dev-env.sh">init-dev-env.sh</a>: на уже смонтированном томе <code>homeapp</code> создаёт нужные каталоги (<code>mkdir -p /home/app/homeapp/.X</code>) и передаёт их пользователю <code>app</code>.</li>
+</ol>
+<p>После этого любая запись по пути <code>~/.X</code> проходит через симлинк на PVC <code>homeapp</code>. Клон монорепо init-скрипт делает однократно: каталог <code>/workspace</code> заполняется, только если в нём нет маркера <code>.gitclone</code>. По завершении клона маркер ставится, и повторные старты пода клон не запускают.</p>
+<h2 id="кеши-по-компонентам">Кеши по компонентам</h2>
+<p>Симлинки задаёт <code>Dockerfile.dev</code> каждого компонента, а каталоги под них в томе создаёт init-скрипт. Что куда попадает:</p>
+<table>
+<thead>
+<tr class="header">
+<th>Компонент</th>
+<th>Кеш</th>
+<th>Путь</th>
+<th>Том</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>app1 backend</td>
+<td>maven-репозиторий</td>
+<td><code>~/.m2</code></td>
+<td>homeapp</td>
+</tr>
+<tr class="even">
+<td>app1 backend</td>
+<td>сборка</td>
+<td><code>target/</code> (в дереве исходников)</td>
+<td>workspace</td>
+</tr>
+<tr class="odd">
+<td>app1 frontend</td>
+<td>зависимости</td>
+<td><code>node_modules</code> (в дереве исходников)</td>
+<td>workspace</td>
+</tr>
+<tr class="even">
+<td>app1 frontend</td>
+<td>кеш npm</td>
+<td><code>~/.npm</code></td>
+<td>homeapp</td>
+</tr>
+<tr class="odd">
+<td>app1 frontend</td>
+<td>прочий кеш инструментов</td>
+<td><code>~/.cache</code></td>
+<td>homeapp</td>
+</tr>
+<tr class="even">
+<td>app2 backend</td>
+<td>кеш pip (скачанные wheel)</td>
+<td><code>~/.cache</code></td>
+<td>homeapp</td>
+</tr>
+<tr class="odd">
+<td>app2 backend</td>
+<td>пакеты <code>pip install --user</code></td>
+<td><code>~/.local</code></td>
+<td>homeapp</td>
+</tr>
+<tr class="even">
+<td>app2 frontend</td>
+<td>зависимости</td>
+<td><code>node_modules</code> (в дереве исходников)</td>
+<td>workspace</td>
+</tr>
+<tr class="odd">
+<td>app2 frontend</td>
+<td>кеш npm</td>
+<td><code>~/.npm</code></td>
+<td>homeapp</td>
+</tr>
+<tr class="even">
+<td>app2 frontend</td>
+<td>прочий кеш инструментов</td>
+<td><code>~/.cache</code></td>
+<td>homeapp</td>
+</tr>
+</tbody>
+</table>
+<p><code>node_modules</code> и артефакты сборки (<code>target/</code>, <code>dist/</code>) лежат внутри рабочей копии в <code>/workspace</code>, то есть на томе <code>workspace</code> без симлинков: dev-серверы фронтов ставят зависимости через <code>npm install</code> в каталог компонента (<code>./node_modules</code>), бекенд app1 кладёт <code>target/</code> рядом с <code>pom.xml</code>. Кеш сборки Angular (<code>.angular/</code>) Angular CLI тоже держит в дереве проекта под <code>/workspace</code>, отдельного симлинка на <code>homeapp</code> для него нет.</p>
+<p><code>~/.npm</code> (фронты) и <code>~/.local</code> (бек app2) вынесены на том <code>homeapp</code> отдельным изменением. До него эти каталоги оставались в эфемерном слое контейнера и пересоздавались при каждом рестарте, так что <code>npm install</code> и <code>pip install --user</code> каждый раз заново тянули пакеты из сети.</p>
+<h2 id="жизненный-цикл-томов">Жизненный цикл томов</h2>
+<p>PVC живут дольше пода. Они сохраняются при:</p>
+<ul>
+<li>обновлении StatefulSet через <code>converge</code> (новый шаблон, новые переменные);</li>
+<li>смене версии образа компонента (bump <code>VERSION</code>/<code>CI_TAG</code>);</li>
+<li>перепланировке пода на другую ноду и перезагрузке ВМ или ноды.</li>
+</ul>
+<p>Тома уничтожаются только при явной очистке окружения – сносе релиза с удалением неймспейса и его PVC (см. <a href="kube-ci-operations.md">Операции kube_ci</a>, раздел про <code>dismiss</code>). <code>reclaimPolicy</code> <code>standard</code>-класса – <code>Delete</code>: PVC удаляется вместе со своим claim’ом, но не при рестарте пода, так что переустановка пода кеши не затрагивает.</p>
+<p>На практике первый клон, первый <code>npm install</code>, первый <code>pip install --user</code> и первая сборка – разовая плата. Последующие операции в том же окружении идут из кеша на томах и от доступности сети не зависят.</p>
+<h2 id="проверка">Проверка</h2>
+<p>Симлинки кешей указывают внутрь смонтированных томов. Проверка из подключённого пода (<code>kubectl exec</code> или терминал VS Code Remote):</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true"></a><span class="co"># куда реально ведёт симлинк кеша -- результат должен быть под одним из томов</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true"></a><span class="fu">readlink</span> -f ~/.npm        # ожидаемо: /home/app/homeapp/.npm</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true"></a><span class="fu">readlink</span> -f ~/.m2         # ожидаемо: /home/app/homeapp/.m2  (бекенд app1)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true"></a><span class="co"># оба тома смонтированы как отдельные файловые системы</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true"></a><span class="fu">df</span> -P /workspace /home/app/homeapp</span></code></pre></div>
+<p>Список и состояние PVC окружения – снаружи кластера:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true"></a><span class="ex">kubectl</span> --context <span class="op">&lt;</span>ctx<span class="op">&gt;</span> -n <span class="op">&lt;</span>namespace<span class="op">&gt;</span> get pvc</span></code></pre></div>
+<p>Каждый под публикует пару <code>workspace-&lt;под&gt;</code> / <code>homeapp-&lt;под&gt;</code> в статусе <code>Bound</code>.</p>
+<h2 id="связанные-статьи">Связанные статьи</h2>
+<ul>
+<li><a href="dev-in-cluster.md">Разработка внутри кластера</a> – dev-схема целиком: что рендерит окружение, init-контейнер, подключение, <code>dev-start.sh</code>.</li>
+<li><a href="dev-workflow-cycle.md">Типовой цикл работы в dev-поде</a> – петля правка-отладка-тест поверх томов и внешний контур выката.</li>
+<li><a href="kube-ci-operations.md">Операции kube_ci</a> – <code>converge</code>, <code>dismiss</code>, <code>purge</code> и что они делают с релизом и томами.</li>
+<li><a href="../products/postgres-and-init.md">PostgreSQL и инициализация</a> – у базы данных свой PVC данных, отдельный от dev-томов компонентов.</li>
+<li><a href="../kubernetes/specifications.md">Спецификации Kubernetes</a> – StatefulSet, Service и прочие объекты окружений.</li>
+</ul>
+</body>
+</html>

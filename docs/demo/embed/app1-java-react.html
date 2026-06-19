@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>app1-java-react.md</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    span.underline{text-decoration: underline;}
+    div.column{display: inline-block; vertical-align: top; width: 50%;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+  </style>
+  <link rel="stylesheet" href="embed.css" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">app1-java-react.md</h1>
+</header>
+<h1 id="app1-java-react">app1-java-react</h1>
+<p><code>app1-java-react</code> – демо-продукт на стеке React (фронт) и Spring Boot (бэкенд) с PostgreSQL и pgAdmin. Эта статья разбирает его состав от исходников до образов: из чего собирается каждая часть, как описаны образы в <code>werf.yaml</code> и чем отличаются dev- и prod-формы. Контракт продукта и общая раскладка манифестов уже описаны – здесь только то, что специфично для этого стека. Сопоставление с вторым продуктом – в <a href="overview.md">overview.md</a>; набор объектов чарта – в <a href="../kubernetes/specifications.md">../kubernetes/specifications.md</a>.</p>
+<h2 id="бэкенд-spring-boot">Бэкенд: Spring Boot</h2>
+<p>Бэкенд – Spring Boot 3.2.5 на Java 17, менеджер пакетов и сборки Maven (<a href="../../apps/app1-java-react/backend/pom.xml"><code>backend/pom.xml</code></a>). Подключены стартеры web, actuator и jdbc, драйвер PostgreSQL и springdoc для swagger-ui. Приложение целиком работает под context-path <code>/api</code> (<a href="../../apps/app1-java-react/backend/src/main/resources/application.yaml"><code>application.yaml</code></a>), чтобы swagger-ui и его ассеты попали под путь, который Ingress маршрутизирует на бэкенд. Подключение к базе берётся из переменных <code>DB_HOST</code>, <code>DB_PORT</code>, <code>DB_NAME</code>, <code>DB_USER</code>, <code>DB_PASSWORD</code> – их подаёт ConfigMap и Secret чарта.</p>
+<p>Actuator вынесен на отдельный порт 8081 (вне <code>/api</code>), на нём открыты только health-эндпойнты с включёнными probe-группами. Это разводит прикладной трафик (порт 8080) и служебные пробы (порт 8081): readiness и liveness Kubernetes бьют по <code>/actuator/health/readiness</code> и <code>/actuator/health/liveness</code> на 8081, не задевая <code>/api</code>.</p>
+<h2 id="сборка-бэкенда-multi-stage-dockerfile">Сборка бэкенда: multi-stage Dockerfile</h2>
+<p>Prod-образ собирается многоступенчатым <a href="../../apps/app1-java-react/backend/Dockerfile"><code>backend/Dockerfile</code></a>. Стадия <code>builder</code> на <code>maven:3.9-eclipse-temurin-17</code> сначала тянет зависимости (<code>mvn dependency:go-offline</code> по одному <code>pom.xml</code>), затем собирает jar (<code>mvn package -DskipTests</code>). Слой зависимостей отделён от слоя исходников и маунтит кеш <code>/root/.m2</code> через BuildKit, поэтому пересборка без изменения зависимостей не перекачивает их заново. <code>finalName</code> в pom фиксирует имя артефакта <code>target/app.jar</code>, чтобы рантайм-стадия копировала предсказуемый путь.</p>
+<p>Рантайм-стадия – <code>eclipse-temurin:17-jre</code>: только JRE, без Maven и JDK. Образ запускается под non-root пользователем (uid 10001), <code>ENTRYPOINT</code> – <code>java -jar /app/app.jar</code>. Build-аргумент <code>BUILD_HASH</code> записывается в <code>/app/.build-info</code>.</p>
+<p>Dev-образ – отдельный <a href="../../apps/app1-java-react/backend/Dockerfile.dev"><code>backend/Dockerfile.dev</code></a> с полным Maven и JDK, git, openssh-client и passwordless sudo. Исходники в этот образ не кладутся – они клонируются в том <code>/workspace</code> init-контейнером уже в кластере. Кеши Maven (<code>~/.m2</code>) и <code>.vscode-server</code> уводятся симлинками в persistent-том <code>homeapp</code>. <code>ENTRYPOINT</code> dev-образа – <code>sleep infinity</code>: под не запускает приложение, а держится живым, чтобы разработчик зашёл в него по VS Code Remote. Подробнее режим – в <a href="../delivery/dev-in-cluster.md">../delivery/dev-in-cluster.md</a>.</p>
+<h2 id="фронтенд-react-vite">Фронтенд: React + Vite</h2>
+<p>Фронт – React 18 на Vite 5, менеджер пакетов pnpm 9.12 (<a href="../../apps/app1-java-react/frontend/package.json"><code>frontend/package.json</code></a>). Сборка <code>tsc -b &amp;&amp; vite build</code>. Версия фронта берётся из <code>package.json</code> и подставляется в код как константа <code>__APP_VERSION__</code> через <code>define</code> в <a href="../../apps/app1-java-react/frontend/vite.config.ts"><code>vite.config.ts</code></a>.</p>
+<p>Содержимое страницы демонстрационное (<a href="../../apps/app1-java-react/frontend/src/App.tsx"><code>frontend/src/App.tsx</code></a>): компонент запрашивает <code>/api/v1/version</code> и <code>/api/v1/items</code> у бэкенда и выводит версию фронта, версию бэкенда и таблицу записей из БД. Это и есть весь прикладной слой – он существует, чтобы показать сквозную цепочку фронт -&gt; бэкенд -&gt; база.</p>
+<h2 id="сборка-фронтенда-build-nginx">Сборка фронтенда: build + nginx</h2>
+<p>Prod-образ (<a href="../../apps/app1-java-react/frontend/Dockerfile"><code>frontend/Dockerfile</code></a>) – двухстадийный: стадия <code>builder</code> на <code>node:20-alpine</code> ставит зависимости через pnpm (corepack) с кешем pnpm-store и собирает статику в <code>dist</code>; рантайм-стадия на <code>nginx:1.27-alpine</code> копирует <code>dist</code> в <code>/usr/share/nginx/html</code>. Дефолтный конфиг nginx удаляется, на его место кладётся <a href="../../apps/app1-java-react/frontend/nginx.conf"><code>frontend/nginx.conf</code></a>: сервер слушает 8080, ассеты под <code>/assets/</code> отдаются с годовым immutable-кешем, а всё остальное – через <code>try_files ... /index.html</code> (fallback на index для SPA-маршрутов).</p>
+<p>Dev-образ фронта (<a href="../../apps/app1-java-react/frontend/Dockerfile.dev"><code>frontend/Dockerfile.dev</code></a>) устроен так же, как dev-образ бэкенда: полный node с pnpm, sleep infinity, исходники из <code>/workspace</code>, кеши через симлинки в <code>homeapp</code>.</p>
+<h2 id="образы-в-werf.yaml">Образы в werf.yaml</h2>
+<p><a href="../../apps/app1-java-react/werf.yaml"><code>werf.yaml</code></a> не перечисляет образы напрямую – он подключает файлы из каталога <code>.werf-partial/</code> через <code>Files.Glob</code> и <code>tpl</code>. Каждый partial – условный фрагмент, который рендерится только в своём окружении по переменной <code>ENVNAME</code>:</p>
+<table>
+<thead>
+<tr class="header">
+<th>Partial</th>
+<th>Условие</th>
+<th>image</th>
+<th>dockerfile</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>backend-prod.yaml</code></td>
+<td><code>ENVNAME != dev</code></td>
+<td><code>backend</code></td>
+<td><code>backend/Dockerfile</code></td>
+</tr>
+<tr class="even">
+<td><code>backend-dev.yaml</code></td>
+<td><code>ENVNAME == dev</code></td>
+<td><code>backend-dev</code></td>
+<td><code>backend/Dockerfile.dev</code></td>
+</tr>
+<tr class="odd">
+<td><code>frontend-prod.yaml</code></td>
+<td><code>ENVNAME != dev</code></td>
+<td><code>frontend</code></td>
+<td><code>frontend/Dockerfile</code></td>
+</tr>
+<tr class="even">
+<td><code>frontend-dev.yaml</code></td>
+<td><code>ENVNAME == dev</code></td>
+<td><code>frontend-dev</code></td>
+<td><code>frontend/Dockerfile.dev</code></td>
+</tr>
+</tbody>
+</table>
+<p>Так в prod werf собирает образы <code>backend</code> и <code>frontend</code>, в dev – <code>backend-dev</code> и <code>frontend-dev</code>, и одно окружение не тянет образы другого. Контекст сборки у prod-образов – подкаталог (<code>backend</code>, <code>frontend</code>), у dev-образов – корень продукта (<code>.</code>), потому что dev-<code>Dockerfile</code> копирует install-скрипты из общего дерева. Секция <code>cleanup.keepPolicies</code> оставляет по два последних образа на git-ссылку.</p>
+<h2 id="dev-и-prod-деплоймент">dev и prod деплоймент</h2>
+<p>Какие манифесты попадут в кластер, решает <code>.Values.env</code>, который приходит из <code>values-&lt;env&gt;.yaml</code>.</p>
+<p>В prod бэкенд и фронт – это Deployment (<a href="../../apps/app1-java-react/.helm/templates/030-backend-prod.yaml"><code>030-backend-prod.yaml</code></a>, <a href="../../apps/app1-java-react/.helm/templates/040-frontend-prod.yaml"><code>040-frontend-prod.yaml</code></a>) с собранными prod-образами через <code>.Values.werf.image</code>. Бэкенд открывает порты 8080 и 8081, пробы бьют в actuator на 8081. Число реплик – по два на бэкенд и фронт (<a href="../../apps/app1-java-react/.helm/values-prod.yaml"><code>values-prod.yaml</code></a>). pgAdmin в prod выключен.</p>
+<p>В dev бэкенд и фронт – StatefulSet с одной репликой (<a href="../../apps/app1-java-react/.helm/templates/031-backend-dev.yaml"><code>031-backend-dev.yaml</code></a>, <a href="../../apps/app1-java-react/.helm/templates/041-frontend-dev.yaml"><code>041-frontend-dev.yaml</code></a>) на dev-образах. Под получает два persistent-тома (<code>workspace</code>, <code>homeapp</code>), init-контейнер <code>prepare-dev-env</code> готовит окружение, смонтирован ssh-ключ <code>id-rsa-vcs</code>. Прикладное приложение в dev-поде не запущено (sleep infinity) – его запускает разработчик вручную внутри пода. pgAdmin в dev включён (<a href="../../apps/app1-java-react/.helm/values-dev.yaml"><code>values-dev.yaml</code></a>). Service бэкенда и фронта в обеих формах называется одинаково (<code>app1-java-react-backend</code>, <code>app1-java-react-frontend</code>), поэтому Ingress не зависит от выбранной формы.</p>
+<h2 id="плюсы-минусы-безопасность-стека">Плюсы, минусы, безопасность стека</h2>
+<p>Сильные стороны. Multi-stage сборка даёт лёгкий рантайм-образ – в prod уезжает JRE без Maven и JDK, в фронте – nginx со статикой без node. BuildKit-кеш по <code>pom.xml</code> и pnpm-store ускоряет повторные сборки. actuator на отдельном порту аккуратно разводит пробы и прикладной трафик. Образы запускаются под non-root.</p>
+<p>Ограничения. JVM-рантайм заметно тяжелее по памяти и времени старта, чем аналогичный Python-сервис; пробы выставлены с запасом по <code>initialDelaySeconds</code> именно под прогрев JVM. Чарт не задаёт <code>requests</code>/<code>limits</code>, поэтому ресурсная изоляция держится на дефолтах кластера (см. <a href="../kubernetes/specifications.md">../kubernetes/specifications.md</a>).</p>
+<p>Безопасность. Пароль базы по умолчанию лежит в открытом виде в <a href="../../apps/app1-java-react/.helm/values.yaml"><code>values.yaml</code></a>, креды pgAdmin – демо-дефолты, трафик идёт по HTTP без редиректа на HTTPS. Это осознанные послабления демо-контура; их разбор и боевые альтернативы (werf secret, TLS) – в <a href="../concepts/security-and-tradeoffs.md">../concepts/security-and-tradeoffs.md</a>.</p>
+<h2 id="связанные-статьи">Связанные статьи</h2>
+<ul>
+<li><a href="overview.md">overview.md</a> – сопоставление с app2-python-angular.</li>
+<li><a href="app2-python-angular.md">app2-python-angular.md</a> – симметричный разбор второго продукта.</li>
+<li><a href="postgres-and-init.md">postgres-and-init.md</a> – PostgreSQL и init.sql.</li>
+<li><a href="pgadmin.md">pgadmin.md</a> – pgAdmin как вспомогательный сервис.</li>
+<li><a href="../kubernetes/specifications.md">../kubernetes/specifications.md</a> – объекты чарта, dev/prod-формы, образы.</li>
+<li><a href="../kubernetes/ingress.md">../kubernetes/ingress.md</a> – маршрутизация <code>/api</code>, <code>/pgadmin</code>, <code>/</code> на сервисы продукта.</li>
+<li><a href="../delivery/dev-in-cluster.md">../delivery/dev-in-cluster.md</a> – dev-поды и разработка внутри кластера.</li>
+<li><a href="../delivery/versioning.md">../delivery/versioning.md</a> – VERSION и CI_TAG.</li>
+<li><a href="../../apps/README.md">../../apps/README.md</a> – контракт продукта.</li>
+</ul>
+</body>
+</html>

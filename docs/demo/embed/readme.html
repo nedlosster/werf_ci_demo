@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>README.md</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    span.underline{text-decoration: underline;}
+    div.column{display: inline-block; vertical-align: top; width: 50%;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+  </style>
+  <link rel="stylesheet" href="embed.css" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">README.md</h1>
+</header>
+<h1 id="документация-werf_ci_demo">Документация werf_ci_demo</h1>
+<p>Документация демо-репозитория, в котором единый CI-контур (<code>kube_ci</code>) ставит два контрастных по стеку продукта в уже развёрнутые кластеры окружений dev и prod по общему контракту <code>.helm/def.sh</code>. Материал рассчитан на инженера среднего уровня, знакомого с Kubernetes и контейнерной сборкой, но не обязательно с werf.</p>
+<p>Документация разбита на тематические разделы. Каждый раздел – отдельный каталог со своим индексом <code>README.md</code> и набором статей. Один факт описывается в одном месте; остальные разделы ссылаются на него.</p>
+<h2 id="путь-чтения">Путь чтения</h2>
+<p>Рекомендованный порядок освоения:</p>
+<ol type="1">
+<li><a href="concepts/README.md">concepts/</a> – зачем werf, чем он отличается от альтернатив, как устроена доставка в Kubernetes, какие компромиссы заложены.</li>
+<li><a href="kubernetes/README.md">kubernetes/</a> – требования к кластеру, спецификации окружений, ingress.</li>
+<li><a href="products/README.md">products/</a> – два демо-продукта, их состав, базы данных и вспомогательные сервисы.</li>
+<li><a href="delivery/README.md">delivery/</a> – модель dev/prod, операции <code>kube_ci</code>, секреты, версионирование, разработка внутри кластера.</li>
+<li><a href="integrations/README.md">integrations/</a> – подключение <code>kube_ci</code> к внешним CI-системам и метрики поставки.</li>
+<li><a href="runbooks/README.md">runbooks/</a> – пошаговые сценарии эксплуатации.</li>
+</ol>
+<p>Справочные материалы читаются по необходимости: <a href="glossary.md">glossary.md</a> – термины контура, <a href="resources.md">resources.md</a> – внешняя документация.</p>
+<h2 id="разделы">Разделы</h2>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Раздел</th>
+<th>Назначение</th>
+<th>Ключевые статьи</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><a href="concepts/README.md">concepts/</a></td>
+<td>Концепции werf и доставки в Kubernetes</td>
+<td><a href="concepts/werf-intro.md">werf-intro.md</a>, <a href="concepts/werf-install.md">werf-install.md</a>, <a href="concepts/werf-vs-alternatives.md">werf-vs-alternatives.md</a>, <a href="concepts/delivery-to-k8s.md">delivery-to-k8s.md</a>, <a href="concepts/application-contract.md">application-contract.md</a>, <a href="concepts/security-and-tradeoffs.md">security-and-tradeoffs.md</a></td>
+</tr>
+<tr class="even">
+<td><a href="kubernetes/README.md">kubernetes/</a></td>
+<td>Кластеры, окружения, ingress</td>
+<td><a href="kubernetes/requirements.md">requirements.md</a>, <a href="kubernetes/specifications.md">specifications.md</a>, <a href="kubernetes/ingress.md">ingress.md</a></td>
+</tr>
+<tr class="odd">
+<td><a href="products/README.md">products/</a></td>
+<td>Демо-продукты и их состав</td>
+<td><a href="products/overview.md">overview.md</a>, <a href="products/app1-java-react.md">app1-java-react.md</a>, <a href="products/app2-python-angular.md">app2-python-angular.md</a>, <a href="products/postgres-and-init.md">postgres-and-init.md</a>, <a href="products/pgadmin.md">pgadmin.md</a></td>
+</tr>
+<tr class="even">
+<td><a href="delivery/README.md">delivery/</a></td>
+<td>Поставка через kube_ci, секреты, версии</td>
+<td><a href="delivery/dev-prod.md">dev-prod.md</a>, <a href="delivery/kube-ci-operations.md">kube-ci-operations.md</a>, <a href="delivery/secrets.md">secrets.md</a>, <a href="delivery/versioning.md">versioning.md</a>, <a href="delivery/dev-in-cluster.md">dev-in-cluster.md</a>, <a href="delivery/dev-caches-and-volumes.md">dev-caches-and-volumes.md</a>, <a href="delivery/dev-workflow-cycle.md">dev-workflow-cycle.md</a>, <a href="delivery/dev-in-cluster-vs-tools.md">dev-in-cluster-vs-tools.md</a></td>
+</tr>
+<tr class="odd">
+<td><a href="integrations/README.md">integrations/</a></td>
+<td>Подключение к CI и метрики</td>
+<td><a href="integrations/gitlab-ci.md">gitlab-ci.md</a>, <a href="integrations/jenkins.md">jenkins.md</a>, <a href="integrations/dora-metrics.md">dora-metrics.md</a></td>
+</tr>
+<tr class="even">
+<td><a href="runbooks/README.md">runbooks/</a></td>
+<td>Сценарии эксплуатации</td>
+<td><a href="runbooks/first-deploy.md">first-deploy.md</a>, <a href="runbooks/deploy.md">deploy.md</a>, <a href="runbooks/cluster-connection.md">cluster-connection.md</a>, <a href="runbooks/secrets-setup.md">secrets-setup.md</a>, <a href="runbooks/troubleshooting.md">troubleshooting.md</a></td>
+</tr>
+<tr class="odd">
+<td>Справочники</td>
+<td>Термины и внешние ресурсы</td>
+<td><a href="glossary.md">glossary.md</a>, <a href="resources.md">resources.md</a></td>
+</tr>
+</tbody>
+</table>
+<h2 id="диаграммы-и-изображения">Диаграммы и изображения</h2>
+<ul>
+<li><a href="diagrams/">diagrams/</a> – источники диаграмм в формате <code>.mmd</code>: <code>architecture</code> (связка apps -&gt; kube_ci -&gt; кластер), <code>converge-flow</code>, <code>industrial-cicd</code>, <code>product-anatomy</code>, <code>dora-flow</code>, <code>deploy-topology</code>, <code>dev-workflow-cycle</code>.</li>
+<li><a href="pics/">pics/</a> – отрендеренные <code>.png</code> для вставки в статьи (по одному на каждый источник из <code>diagrams/</code>).</li>
+</ul>
+<h2 id="связанные-документы">Связанные документы</h2>
+<ul>
+<li><a href="../README.md">../README.md</a> – обзор репозитория и базовые операции.</li>
+<li><a href="../apps/README.md">../apps/README.md</a> – контракт продукта для kube_ci.</li>
+<li><a href="../kube_ci/README.md">../kube_ci/README.md</a> – отличия адаптированной копии оркестрации от исходного kube_ci.</li>
+</ul>
+</body>
+</html>

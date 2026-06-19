@@ -65,9 +65,25 @@
   .s-body h2{margin:0 0 clamp(12px,2.5vh,24px); font-size:clamp(25px,4.4vh,44px);
     line-height:1.15; letter-spacing:-.5px}
 
-  .s-grid{flex:1; display:grid; grid-template-columns:1.05fr .95fr;
-    gap:clamp(20px,4vw,52px); align-items:center; min-height:0}
+  .s-grid{flex:1; display:grid; grid-template-columns:1fr 1fr;
+    gap:clamp(20px,4vw,48px); align-items:center; min-height:0}
   .s-grid.no-img{grid-template-columns:1fr}
+  .s-grid.embed{align-items:stretch}
+
+  /* встроенная страница документации */
+  .doc-embed{display:flex; flex-direction:column; min-height:0; height:100%;
+    border:1px solid var(--line); border-radius:10px; overflow:hidden;
+    box-shadow:var(--shadow); background:#fff}
+  .doc-bar{display:flex; align-items:center; gap:10px; padding:7px 12px;
+    background:#f3f6fa; border-bottom:1px solid var(--line)}
+  .doc-bar .doc-name{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    font-size:clamp(11px,1.5vh,13px); color:var(--muted); overflow:hidden;
+    text-overflow:ellipsis; white-space:nowrap}
+  .doc-bar .doc-open{margin-left:auto; white-space:nowrap; font-weight:600;
+    font-size:clamp(11px,1.5vh,13px); padding:3px 11px; border-radius:7px;
+    background:var(--accent); color:#fff}
+  .doc-bar .doc-open:hover{background:#1a5fd0}
+  .doc-frame{flex:1; width:100%; border:0; background:#fff; min-height:42vh}
   figure{margin:0; text-align:center; min-height:0; display:flex;
     flex-direction:column; justify-content:center}
   figure img{max-width:100%; max-height:58vh; object-fit:contain;
@@ -93,6 +109,9 @@
     font-size:clamp(11px,1.5vh,13px); padding:3px 10px; border:1px solid var(--line);
     border-radius:7px; background:#f7f9fc; color:var(--accent)}
   .s-foot .gh a:hover{border-color:var(--accent); background:var(--accent-soft)}
+  .s-foot .gh a.gh-main{font-weight:600; color:#fff; background:var(--accent);
+    border-color:var(--accent); padding:4px 12px}
+  .s-foot .gh a.gh-main:hover{background:#1a5fd0}
 
   /* титульный контентный слайд (Слайд 1): текстовый титул + скриншот индекса */
   .title-col{align-self:center}
@@ -382,6 +401,46 @@ const BLOCKS = [
 ];
 
 
+// ---- карта документа для правой части каждого слайда (ключ — sl.no) ----
+// slug — страница в embed/, gh — путь .md от корня репозитория для ссылки на GitHub.
+const DOC = {
+  1:{slug:'readme', gh:'docs/README.md'},
+  2:{slug:'overview', gh:'docs/products/overview.md'},
+  3:{slug:'delivery-to-k8s', gh:'docs/concepts/delivery-to-k8s.md'},
+  4:{slug:'werf-intro', gh:'docs/concepts/werf-intro.md'},
+  5:{slug:'application-contract', gh:'docs/concepts/application-contract.md'},
+  6:{slug:'overview', gh:'docs/products/overview.md'},
+  7:{slug:'dev-in-cluster', gh:'docs/delivery/dev-in-cluster.md'},
+  8:{slug:'dev-in-cluster-vs-tools', gh:'docs/delivery/dev-in-cluster-vs-tools.md'},
+  9:{slug:'dev-workflow-cycle', gh:'docs/delivery/dev-workflow-cycle.md'},
+  10:{slug:'app1-java-react', gh:'docs/products/app1-java-react.md'},
+  11:{slug:'dev-caches-and-volumes', gh:'docs/delivery/dev-caches-and-volumes.md'},
+  12:{slug:'kube-ci-operations', gh:'docs/delivery/kube-ci-operations.md'},
+  13:{slug:'dev-prod', gh:'docs/delivery/dev-prod.md'},
+  14:{slug:'security-and-tradeoffs', gh:'docs/concepts/security-and-tradeoffs.md'},
+  15:{slug:'readme', gh:'docs/README.md'},
+  16:{slug:'qa-bank', gh:'docs/demo/qa-bank.md'}
+};
+
+function embedPanel(doc){
+  return `<div class="doc-embed">
+    <div class="doc-bar">
+      <span class="doc-name">${doc.gh}</span>
+      <a class="doc-open" href="${REPO}${doc.gh}" target="_blank" rel="noopener">GitHub ↗</a>
+    </div>
+    <iframe class="doc-frame" src="embed/${doc.slug}.html" loading="lazy" title="${doc.gh}"></iframe>
+  </div>`;
+}
+
+function footHTML(sl, doc){
+  const main = `<a class="gh-main" href="${REPO}${doc.gh}" target="_blank" rel="noopener">Открыть на GitHub: ${doc.gh}</a>`;
+  const chips = sl.gh ? sl.gh.map(g=>`<a href="${REPO}${g.p}" target="_blank" rel="noopener">${g.t}</a>`).join('') : '';
+  return `<div class="s-foot">
+    <div class="show"><b>Показать:</b> ${sl.show}.</div>
+    <div class="gh"><span class="lbl">GitHub:</span>${main}${chips}</div>
+  </div>`;
+}
+
 // ---- сборка плоского списка слайдов: титул + контент из BLOCKS + закрытие ----
 const SLIDES = [{type:'cover'}];
 for(const b of BLOCKS){
@@ -414,10 +473,8 @@ function slideHTML(s){
     </section>`;
   }
   const b = s.b, sl = s.sl, core = !!b.core;
-  const gh0 = sl.gh
-    ? `<div class="gh"><span class="lbl">GitHub:</span>${sl.gh.map(g=>`<a href="${REPO}${g.p}" target="_blank" rel="noopener">${g.t}</a>`).join('')}</div>`
-    : '';
-  // Слайд 1 «Титул»: текстовый титул слева + скриншот индекса документации справа
+  const doc = DOC[sl.no];
+  // Слайд 1 «Титул»: текстовый титул слева + встроенный индекс документации справа
   if(b.n === 1 && sl.no === 1){
     return `<section class="slide content title-slide">
       <div class="s-head">
@@ -426,7 +483,7 @@ function slideHTML(s){
       </div>
       <div class="s-body">
         <div class="s-slideno">Слайд ${sl.no}</div>
-        <div class="s-grid">
+        <div class="s-grid embed">
           <div class="title-col">
             <div class="kicker">Демонстрация · ГНИВЦ</div>
             <h2 class="title-h">${META.title}</h2>
@@ -435,22 +492,13 @@ function slideHTML(s){
             <div class="who">Олейник Денис Сергеевич<span>ГНИВЦ</span></div>
             <ul class="theses small">${sl.theses.map(t=>`<li>${t}</li>`).join('')}</ul>
           </div>
-          <figure><img src="../pics/docs-index.png" alt="Индекс документации"><figcaption>Индекс документации (docs/README.md)</figcaption></figure>
+          ${embedPanel(doc)}
         </div>
-        <div class="s-foot">
-          <div class="show"><b>Показать:</b> ${sl.show}.</div>
-          ${gh0}
-        </div>
+        ${footHTML(sl, doc)}
       </div>
     </section>`;
   }
   const theses = `<ul class="theses">${sl.theses.map(t=>`<li>${t}</li>`).join('')}</ul>`;
-  const body = sl.img
-    ? `<div class="s-grid">${theses}<figure><img src="../pics/${sl.img}" alt="${sl.cap||''}"><figcaption>${sl.cap||''}</figcaption></figure></div>`
-    : `<div class="s-grid no-img">${theses}</div>`;
-  const gh = sl.gh
-    ? `<div class="gh"><span class="lbl">GitHub:</span>${sl.gh.map(g=>`<a href="${REPO}${g.p}" target="_blank" rel="noopener">${g.t}</a>`).join('')}</div>`
-    : '';
   return `<section class="slide content${core?' is-core':''}">
     <div class="s-head">
       <span class="blk">Блок ${b.n} · <b>${b.title}</b></span>
@@ -459,11 +507,8 @@ function slideHTML(s){
     <div class="s-body">
       <div class="s-slideno">Слайд ${sl.no}</div>
       <h2>${sl.title}</h2>
-      ${body}
-      <div class="s-foot">
-        <div class="show"><b>Показать:</b> ${sl.show}.</div>
-        ${gh}
-      </div>
+      <div class="s-grid embed">${theses}${embedPanel(doc)}</div>
+      ${footHTML(sl, doc)}
     </div>
   </section>`;
 }

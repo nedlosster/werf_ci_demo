@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>overview.md</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    span.underline{text-decoration: underline;}
+    div.column{display: inline-block; vertical-align: top; width: 50%;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+  </style>
+  <link rel="stylesheet" href="embed.css" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">overview.md</h1>
+</header>
+<h1 id="обзор-продуктов">Обзор продуктов</h1>
+<p>Демо несёт два продукта, намеренно разведённых по стеку: <code>app1-java-react</code> (React + Spring Boot на Java) и <code>app2-python-angular</code> (Angular + FastAPI на Python). Контраст выбран не ради разнообразия как такового – он проверяет главное утверждение схемы: контур <code>kube_ci</code> ставит приложение в кластер, ничего не зная о его внутренностях. Если два продукта на разных языках, с разными сборщиками и разными веб-фреймворками деплоятся одним и тем же кодом, значит контур опирается на контракт, а не на знание о конкретном приложении. Эта статья сопоставляет продукты: что у них общее, чем они различаются и почему различия не доходят до уровня доставки. Сам поток доставки разобран в <a href="../concepts/delivery-to-k8s.md">../concepts/delivery-to-k8s.md</a>, контракт – в <a href="../concepts/application-contract.md">../concepts/application-contract.md</a> и <a href="../../apps/README.md">../../apps/README.md</a>.</p>
+<h2 id="зачем-два-контрастных-продукта">Зачем два контрастных продукта</h2>
+<p>Один продукт ничего не доказывает: под него легко подогнать оркестрацию. Два продукта на максимально разных стеках выявляют, где в контуре спрятано скрытое знание о приложении. В этой паре различается почти всё, что обычно различается между реальными командами:</p>
+<ul>
+<li>язык бэкенда – Java против Python;</li>
+<li>веб-фреймворк бэкенда – Spring Boot против FastAPI;</li>
+<li>менеджер пакетов бэкенда – Maven против pip;</li>
+<li>фронтенд-фреймворк – React (Vite) против Angular (Angular CLI);</li>
+<li>менеджер пакетов фронта – pnpm против npm;</li>
+<li>модель health-проб – actuator на отдельном порту против HTTP-эндпойнта на том же порту.</li>
+</ul>
+<p>При этом <code>kube_ci</code> для обоих продуктов исполняет один и тот же <code>werf converge</code> без единой ветки «если это app1». Различия живут внутри продукта – в его <code>Dockerfile</code>, <code>werf.yaml</code> и чарте, – а наружу, к контуру, каждый продукт выставляет одинаковый контракт.</p>
+<h2 id="что-общего">Что общего</h2>
+<p>Несмотря на разные стеки, оба продукта собраны по одному шаблону. Совпадает не случайно похожее, а сознательно унифицированное.</p>
+<p>Единый контракт. Оба продукта описывают окружения в <a href="../../apps/app1-java-react/.helm/def.sh"><code>.helm/def.sh</code></a> одинаково: функции <code>dev</code> и <code>prod</code> экспортируют <code>APPNAME</code>, <code>ENVNAME</code>, <code>NAMESPACE</code>, <code>CI_URL</code> и <code>CI_TAG</code>. Контур читает только эти переменные, поэтому подключение продукта не требует правок в <code>kube_ci</code>.</p>
+<p>Единая версия. Источник истины – файл <code>VERSION</code> в корне продукта (сейчас <code>0.1.0</code> у обоих). Скрипт <a href="../../apps/app1-java-react/scripts/set-version.sh"><code>scripts/set-version.sh</code></a> раскладывает её по всем файлам, где версия дублируется (<code>pom.xml</code> или <code>pyproject.toml</code>, <code>package.json</code>, <code>Chart.yaml</code>), а <code>def.sh</code> читает её же в <code>CI_TAG</code>. Из <code>CI_TAG</code> werf тегирует собранные образы. Механика версий разобрана в <a href="../delivery/versioning.md">../delivery/versioning.md</a>.</p>
+<p>Хранилище и его обвязка. Оба продукта используют PostgreSQL 16, поднятый внутри своего неймспейса StatefulSet-ом, и pgAdmin как вспомогательный веб-клиент к базе (включён в dev, выключен в prod). Схема базы инициализируется один раз из <a href="../../apps/app1-java-react/.helm/files/init.sql"><code>.helm/files/init.sql</code></a>; отдельного миграционного инструмента нет. Подробно – в <a href="postgres-and-init.md">postgres-and-init.md</a> и <a href="pgadmin.md">pgadmin.md</a>.</p>
+<p>Раскладка манифестов. Чарты обоих продуктов имеют идентичный набор шаблонов с числовыми префиксами (<code>010-configmap</code>, <code>011-secret</code>, <code>020-postgres</code>, <code>021-db-init-configmap</code>, <code>030/031-backend</code>, <code>040/041-frontend</code>, <code>050/050a-pgadmin</code>, <code>100-ingress</code>). Префикс задаёт порядок чтения файлов, не порядок применения. Полная таблица объектов – в <a href="../kubernetes/specifications.md">../kubernetes/specifications.md</a>.</p>
+<p>Две формы бэкенда и фронта. В каждом чарте бэкенд и фронт описаны дважды: prod-форма (<code>030</code>, <code>040</code>) – Deployment с собранным образом и health-пробами; dev-форма (<code>031</code>, <code>041</code>) – StatefulSet, который держит долгоживущий под для разработки внутри кластера. Какая форма попадёт в кластер, решает <code>.Values.env</code>. Режим разработки описан в <a href="../delivery/dev-in-cluster.md">../delivery/dev-in-cluster.md</a>.</p>
+<h2 id="сопоставление-стеков">Сопоставление стеков</h2>
+<table>
+<thead>
+<tr class="header">
+<th>Ось</th>
+<th>app1-java-react</th>
+<th>app2-python-angular</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Бэкенд: язык</td>
+<td>Java 17</td>
+<td>Python 3.12</td>
+</tr>
+<tr class="even">
+<td>Бэкенд: фреймворк</td>
+<td>Spring Boot 3.2.5</td>
+<td>FastAPI &gt;=0.111</td>
+</tr>
+<tr class="odd">
+<td>Бэкенд: пакеты</td>
+<td>Maven (<code>pom.xml</code>)</td>
+<td>pip + <code>pyproject.toml</code></td>
+</tr>
+<tr class="even">
+<td>Бэкенд: запуск</td>
+<td><code>java -jar app.jar</code></td>
+<td><code>uvicorn app2.main:app</code></td>
+</tr>
+<tr class="odd">
+<td>Бэкенд: health</td>
+<td>actuator на порту 8081</td>
+<td><code>/health</code> на порту 8080</td>
+</tr>
+<tr class="even">
+<td>Фронтенд: фреймворк</td>
+<td>React 18 + Vite 5</td>
+<td>Angular 18 (Angular CLI)</td>
+</tr>
+<tr class="odd">
+<td>Фронтенд: пакеты</td>
+<td>pnpm 9</td>
+<td>npm</td>
+</tr>
+<tr class="even">
+<td>Фронтенд: рантайм</td>
+<td>nginx 1.27 со статикой</td>
+<td>nginx 1.27 со статикой</td>
+</tr>
+<tr class="odd">
+<td>База</td>
+<td>PostgreSQL 16</td>
+<td>PostgreSQL 16</td>
+</tr>
+<tr class="even">
+<td>Веб-клиент БД</td>
+<td>pgAdmin 8</td>
+<td>pgAdmin 8</td>
+</tr>
+<tr class="odd">
+<td>Версия</td>
+<td><code>VERSION</code> -&gt; <code>CI_TAG</code></td>
+<td><code>VERSION</code> -&gt; <code>CI_TAG</code></td>
+</tr>
+</tbody>
+</table>
+<p>Различия упираются в уровень продукта и не поднимаются до контура. На уровне доставки остаётся ровно один интерфейс: контракт <code>.helm/def.sh</code> и набор образов, которые werf собирает по <code>werf.yaml</code>. Детали сборки каждого продукта – в <a href="app1-java-react.md">app1-java-react.md</a> и <a href="app2-python-angular.md">app2-python-angular.md</a>.</p>
+<h2 id="что-демонстрационно-а-что-нет">Что демонстрационно, а что нет</h2>
+<p>Бизнес-логика обоих приложений минимальна и существует только для наглядности: бэкенд отдаёт свою версию и список записей из таблицы <code>items</code>, фронт показывает обе версии и эту таблицу. Записи приходят из <code>init.sql</code>. Это не полнофункциональный продукт и не претендует им быть – содержательной части здесь нет по замыслу.</p>
+<p>Ценность демо лежит в другом слое – в упаковке и доставке. Показывается, что два разнородных приложения упакованы по одному контракту, собираются единым <code>werf converge</code>, версионируются из общего <code>VERSION</code>, разворачиваются в раздельные неймспейсы и публикуются одинаковым Ingress. Содержимое приложения при этом взаимозаменяемо: на его место встаёт любой продукт, выставляющий тот же контракт. Граница между «что доставляем» и «как доставляем» – и есть предмет демонстрации.</p>
+<h2 id="плюсы-минусы-безопасность">Плюсы, минусы, безопасность</h2>
+<p>Плюсы. Два контрастных стека под одним контрактом наглядно доказывают, что контур не привязан к языку приложения: расхождения остаются на уровне <code>Dockerfile</code> и зависимостей, а доставка одинакова. Каждый продукт самодостаточен – свой <code>werf.yaml</code>, своя база, свой неймспейс.</p>
+<p>Минусы. Содержательной бизнес-логики у обоих приложений нет, и оценивать по ним продуктовую функциональность нельзя – это носители стека и контракта. Симметрия чартов держится на дисциплине: расхождение в шаблонах двух продуктов придётся править в двух местах.</p>
+<p>Безопасность. Демо-дефолты (пароли БД и pgAdmin в открытом виде, HTTP без TLS) одинаковы у обоих продуктов и одинаково небоевые. Их разбор и боевые альтернативы – в <a href="../concepts/security-and-tradeoffs.md">Компромиссах и безопасности схемы</a>.</p>
+<h2 id="связанные-статьи">Связанные статьи</h2>
+<ul>
+<li><a href="app1-java-react.md">app1-java-react.md</a> – состав и сборка продукта на React + Spring Boot.</li>
+<li><a href="app2-python-angular.md">app2-python-angular.md</a> – состав и сборка продукта на Angular + FastAPI.</li>
+<li><a href="postgres-and-init.md">postgres-and-init.md</a> – PostgreSQL и инициализация схемы в обоих продуктах.</li>
+<li><a href="pgadmin.md">pgadmin.md</a> – pgAdmin как вспомогательный сервис.</li>
+<li><a href="../../apps/README.md">../../apps/README.md</a> – контракт продукта для kube_ci.</li>
+<li><a href="../concepts/delivery-to-k8s.md">../concepts/delivery-to-k8s.md</a> – поток доставки от def.sh до объектов в кластере.</li>
+<li><a href="../kubernetes/specifications.md">../kubernetes/specifications.md</a> – полный набор объектов чарта на продукт.</li>
+<li><a href="../delivery/versioning.md">../delivery/versioning.md</a> – единая версия и CI_TAG.</li>
+<li><a href="../delivery/dev-in-cluster.md">../delivery/dev-in-cluster.md</a> – dev-форма подов и разработка внутри кластера.</li>
+</ul>
+</body>
+</html>

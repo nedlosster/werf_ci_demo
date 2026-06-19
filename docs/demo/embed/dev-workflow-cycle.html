@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>dev-workflow-cycle.md</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    span.underline{text-decoration: underline;}
+    div.column{display: inline-block; vertical-align: top; width: 50%;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  <link rel="stylesheet" href="embed.css" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">dev-workflow-cycle.md</h1>
+</header>
+<h1 id="типовой-цикл-работы-в-dev-поде">Типовой цикл работы в dev-поде</h1>
+<p>dev-под – долгоживущая песочница в кластере, в которой разработчик правит код через VS Code Remote, поднимает dev-сервер и проверяет правки до того, как они уйдут в общий контур доставки. Статья собирает разрозненные шаги в один связный цикл: от подключения к поду до выката в prod. Устройство самой dev-схемы (что рендерит окружение, init-контейнер, <code>dev-start.sh</code>) описывает <a href="dev-in-cluster.md">Разработка внутри кластера</a>; persistent-volume’ы пода – <a href="dev-caches-and-volumes.md">Кеши и persistent-volume’ы dev-сред</a>; поток выкатки через converge – <a href="../concepts/delivery-to-k8s.md">Доставка в Kubernetes</a>.</p>
+<p>Цикл важно разделить на две зоны ответственности. Внутренняя петля (правка -&gt; отладка -&gt; тест) замыкается на dev-поде и рабочей машине разработчика и повторяется сколько угодно раз. Внешний контур (push, выкат через <code>kube_ci</code>, прод) проходится реже и через общую инфраструктуру. Синхронизация между зонами – только через git: ни <code>scp</code>, ни <code>rsync</code> между рабочей машиной и деплой-сервером не используется.</p>
+<figure>
+<img src="../pics/dev-workflow-cycle.png" alt="" /><figcaption>Цикл работы в dev-поде: подключение, git pull, петля правка-отладка-тест, git push, выкат через kube_ci, прод как точка остановки</figcaption>
+</figure>
+<h2 id="участники">Участники</h2>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Участник</th>
+<th>Роль в цикле</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Разработчик (VS Code Remote)</td>
+<td>правит исходники, запускает dev-сервер, проверяет в dev, делает <code>git push</code> с рабочей машины</td>
+</tr>
+<tr class="even">
+<td>dev-под</td>
+<td>песочница <code>sleep infinity</code> с <code>/workspace</code>; держит исходники, кеши, dev-сервер</td>
+</tr>
+<tr class="odd">
+<td>GitHub</td>
+<td>удалённый репозиторий монорепо, источник <code>git pull</code> в под и приёмник <code>git push</code></td>
+</tr>
+<tr class="even">
+<td>Деплой-сервер / GitLab CI</td>
+<td>контур <code>kube_ci</code>: <code>git pull</code> репозитория и запуск выкатки через <code>werf converge</code></td>
+</tr>
+<tr class="odd">
+<td>prod-кластер</td>
+<td>целевое окружение прод-выката, точка остановки цикла</td>
+</tr>
+</tbody>
+</table>
+<h2 id="шаг-1-подключение-к-поду">Шаг 1: подключение к поду</h2>
+<p>dev-под уже развёрнут окружением <code>dev</code> (StatefulSet, <code>sleep infinity</code>). Разработчик подключается к нему через VS Code Remote (Kubernetes/SSH) либо <code>kubectl exec</code> и открывает рабочую копию продукта в <code>/workspace</code>. Расширения и настройки VS Code живут в PVC <code>homeapp</code> и переживают пересоздание пода, поэтому повторное подключение не требует переустановки <code>.vscode-server</code>. Детали подключения – в <a href="dev-in-cluster.md">Разработке внутри кластера</a>.</p>
+<h2 id="шаг-2-обновление-рабочей-копии">Шаг 2: обновление рабочей копии</h2>
+<p>Перед правками рабочую копию в <code>/workspace</code> подтягивают к актуальному состоянию:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true"></a><span class="bu">cd</span> /workspace/werf_ci_demo</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true"></a><span class="fu">git</span> pull</span></code></pre></div>
+<p><code>git pull</code> идёт по SSH от пользователя <code>app</code>. Приватный ключ монтируется Secret’ом <code>id-rsa-vcs</code> в <code>~/.ssh/id_rsa</code>, а блок для <code>github.com</code> (<code>StrictHostKeyChecking no</code>, <code>UserKnownHostsFile=/dev/null</code>) запечён в <code>/etc/ssh/ssh_config</code> на стадии сборки dev-образа (<code>Dockerfile.dev</code>). За счёт этого <code>pull</code> обходится без <code>known_hosts</code> и ручного подтверждения хоста.</p>
+<h2 id="шаг-3-5-петля-правка---отладка---тест">Шаг 3-5: петля правка -&gt; отладка -&gt; тест</h2>
+<p>Внутренняя петля – основная часть работы. Она замыкается на поде и повторяется до тех пор, пока правка не пройдёт проверку:</p>
+<ol type="1">
+<li>Правка исходников в <code>/workspace/werf_ci_demo/apps/&lt;product&gt;/{backend,frontend}</code> прямо из VS Code Remote.</li>
+<li>Запуск dev-сервера скриптом <code>dev-start.sh</code> из каталога компонента. Бек и фронт слушают <code>0.0.0.0:8080</code> – это <code>targetPort</code> dev-Service, поэтому сервер виден снаружи через ingress по nip.io. Команды запуска по компонентам и тонкости (<code>npm install</code> вместо corepack у Vite, <code>uvicorn</code> без <code>--reload</code>) разобраны в <a href="dev-in-cluster.md">Разработке внутри кластера</a>.</li>
+<li>Отладка через ingress: фронты отвечают по nip.io только при заданном <code>allowedHosts</code> (<code>.nip.io</code>) в их конфигурации сервера.</li>
+<li>Тестирование в dev – <code>curl</code> по профилям эндпоинтов и функциональная проверка поведения. По результату разработчик возвращается к шагу 1 либо выходит из петли.</li>
+</ol>
+<p>Поскольку клон, зависимости и артефакты сборки лежат на persistent-volume’ах, повторный вход в петлю не платит за пересоздание состояния: <code>npm install</code> и сборка идут из кеша на томах (см. <a href="dev-caches-and-volumes.md">Кеши и persistent-volume’ы dev-сред</a>).</p>
+<h2 id="шаг-6-git-push-с-рабочей-машины">Шаг 6: git push с рабочей машины</h2>
+<p>Когда правка прошла проверку в dev, изменения уходят в репозиторий через <code>git push</code>. Push выполняется с рабочей машины разработчика, а не с деплой-сервера: деплой-сервер – только потребитель кода (<code>git pull</code> плюс прогон <code>kube_ci</code>), он ничего не публикует обратно. Прямого копирования файлов между машинами нет – единственный канал переноса состояния это git.</p>
+<h2 id="шаг-7-попадание-кода-в-контур-доставки">Шаг 7: попадание кода в контур доставки</h2>
+<p>Дальше код попадает на деплой-сервер одним из двух путей – это развилка <code>alt</code> на диаграмме:</p>
+<ul>
+<li>Ручной путь: на деплой-сервере выполняется <code>git pull</code> склонированного репозитория, после чего запускается <code>kube_ci</code>.</li>
+<li>Автоматический путь: GitLab CI ловит коммит и триггерит pipeline, который сам вызывает скрипты <code>kube_ci</code>. Pipeline остаётся тонкой обёрткой над теми же скриптами, что и ручной запуск – подключение к GitLab CI описано в <a href="../integrations/gitlab-ci.md">GitLab CI</a>.</li>
+</ul>
+<p>Оба пути ведут к одной и той же команде выката, меняется лишь, кто её вызывает.</p>
+<h2 id="шаг-8-выкат-через-kube_ci">Шаг 8: выкат через kube_ci</h2>
+<p>Выкат запускает <code>00-build-deploy.sh</code> из каталога окружения, под капотом – <code>werf converge</code>: сборка образов, публикация в in-cluster registry и применение релиза в неймспейс <code>&lt;NAMESPACE&gt;-&lt;ENVNAME&gt;</code>. Версия образов берётся из файла <code>VERSION</code> продукта и доходит до контура как <code>CI_TAG</code> (см. <a href="versioning.md">Версионирование</a>). Полный разбор шагов converge – в <a href="../concepts/delivery-to-k8s.md">Доставке в Kubernetes</a>.</p>
+<p>Порядок окружений: сначала <code>dev</code> (автоматически, как штатное продолжение push), затем <code>prod</code>. dev-выкат подтверждает, что собранный релиз поднимается, до того как код предлагается к прод-выкату.</p>
+<h2 id="шаг-9-прод-как-точка-остановки">Шаг 9: прод как точка остановки</h2>
+<p>Прод – точка остановки цикла. <code>converge prod</code> выполняется только с явного разрешения, не автоматически по push. После применения релиза проверяется rollout и прогоняется smoke-набор <a href="../../kube_ci/prod/04-smoke.sh">04-smoke.sh</a> окружения <code>prod</code>. Сценарии публикации и отката в обоих окружениях – в <a href="../runbooks/deploy.md">runbook деплоя</a>; сквозной прогон всех операций – в <a href="../runbooks/full-test-cycle.md">full-test-cycle.md</a>.</p>
+<p>Разрешение на прод и точка остановки – не техническое ограничение скрипта, а правило эксплуатации: dev-выкат идёт следом за push без участия человека, прод – только осознанным действием.</p>
+<h2 id="где-замыкается-цикл">Где замыкается цикл</h2>
+<p>Большая часть итераций не доходит дальше шага 5: правка, отладка и проверка крутятся внутри dev-пода, и только проверенное изменение уходит в <code>git push</code>. Внешний контур (шаги 7-9) проходится реже и одинаково для обоих продуктов – <code>kube_ci</code> не знает их внутренностей и работает по контракту <code>.helm/def.sh</code>. За счёт этого один и тот же путь выката обслуживает и Java/React, и Python/Angular.</p>
+<h2 id="связанные-статьи">Связанные статьи</h2>
+<ul>
+<li><a href="dev-in-cluster.md">Разработка внутри кластера</a> – dev-схема целиком: подключение, init-контейнер, <code>dev-start.sh</code>, <code>git pull</code> по SSH.</li>
+<li><a href="dev-caches-and-volumes.md">Кеши и persistent-volume’ы dev-сред</a> – что из состояния пода переживает повторный вход в петлю.</li>
+<li><a href="kube-ci-operations.md">Операции kube_ci</a> – <code>converge</code>, <code>dismiss</code>, <code>purge</code>.</li>
+<li><a href="../concepts/delivery-to-k8s.md">Доставка в Kubernetes</a> – поток converge от подготовки продуктов до применения релиза.</li>
+<li><a href="../integrations/gitlab-ci.md">GitLab CI</a> – автоматический путь выката через pipeline.</li>
+<li><a href="../runbooks/deploy.md">Runbook деплоя</a> – публикация, снос, очистка по шагам.</li>
+</ul>
+</body>
+</html>

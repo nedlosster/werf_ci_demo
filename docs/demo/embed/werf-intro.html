@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>werf-intro.md</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    span.underline{text-decoration: underline;}
+    div.column{display: inline-block; vertical-align: top; width: 50%;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  <link rel="stylesheet" href="embed.css" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">werf-intro.md</h1>
+</header>
+<h1 id="введение-в-werf">Введение в werf</h1>
+<p><a href="https://werf.io">werf</a> – open-source CLI-инструмент, который закрывает обе половины доставки приложения в Kubernetes: сборку образов и применение релиза. В большинстве пайплайнов эти задачи делят два разных инструмента – сборщик образов и шаблонизатор манифестов, – и связывают их скриптами. werf совмещает их в одной программе и в одном запуске. В этом демо он остаётся единственным звеном, которое что-то собирает и что-то разворачивает; bash-обёртки <code>kube_ci</code> лишь вызывают werf с подготовленными параметрами и не лезут внутрь его работы. Эта статья объясняет, что именно делает werf, как устроена его ключевая команда, почему он по умолчанию требует git и где это требование ослаблено в демо, как кешируются стадии сборки и как werf ставится в систему.</p>
+<h2 id="что-делает-werf">Что делает werf</h2>
+<p>werf покрывает четыре операции жизненного цикла образа и релиза. Сборка описывается в <code>werf.yaml</code>: оттуда werf узнаёт, какие образы собрать и из чего. Публикация – это пуш собранных образов в container registry. Деплой берёт helm-совместимый чарт из каталога <code>.helm/</code> и применяет релиз в кластер. Очистка удаляет из registry образы, которые больше не нужны, по политикам команды <code>werf cleanup</code>.</p>
+<p>Особенность в том, что эти операции связаны общим состоянием git и общим адресным пространством образов. werf сам считает, какие стадии сборки уже есть в хранилище, а каких не хватает, и собирает только недостающее. Он же знает, под каким тегом образ окажется в чарте, потому что и сборка, и рендер манифестов идут из одного запуска. Эту согласованность ручная связка <code>docker build</code> и <code>kubectl apply</code> обеспечивает только дисциплиной инженера.</p>
+<h2 id="команда-converge">Команда converge</h2>
+<p>Центральная команда демо – <code>werf converge</code>. Одним вызовом она собирает недостающие образы, публикует их в registry и применяет релиз в кластер – то есть <code>build</code>, <code>publish</code> и <code>deploy</code> в одной операции. Именно её вызывает <a href="../../kube_ci/utils/03-werf-converge.sh"><code>kube_ci/utils/03-werf-converge.sh</code></a> в функции <code>deploy()</code>, передавая окружение, неймспейс, values и набор <code>--set</code>-значений из контракта продукта. Поскольку converge идемпотентна, повторный запуск без изменений в git и образах ничего не пересобирает и не переразворачивает – он сверяет желаемое состояние с фактическим и доводит кластер до желаемого.</p>
+<p>В демо converge запускается с флагом <code>--atomic</code> и <code>--timeout=300</code>: при сбое релиз откатывается к предыдущему состоянию целиком, без частично применённых изменений. Это превращает публикацию в операцию «всё или ничего», что важно для базовых сценариев из <a href="../runbooks/README.md">../runbooks/</a>.</p>
+<h2 id="giterminism">Giterminism</h2>
+<p>По умолчанию werf работает в режиме giterminism: конфигурация сборки и чарт должны быть закоммичены в git, а werf читает их из коммита, а не из рабочего дерева. Так werf добивается воспроизводимости – результат сборки определяется git-состоянием, а не случайными файлами на диске сборщика.</p>
+<p>В демо продукты подтягиваются локально (см. <a href="delivery-to-k8s.md">доставку в Kubernetes</a>) и часто собираются прямо из рабочего дерева, поэтому строгий giterminism ослаблен флагом <code>--loose-giterminism=true</code>. Вместе с <code>--dev</code> это позволяет werf видеть незакоммиченные изменения. Удобство покупается ценой воспроизводимости: при loose-giterminism результат сборки больше не привязан строго к git-коммиту. Этот компромисс и его влияние разобраны в <a href="security-and-tradeoffs.md">компромиссах схемы</a>.</p>
+<h2 id="stages-и-хранилище-стадий">Stages и хранилище стадий</h2>
+<p>Сборка образа в werf разбита на стадии (stages). Каждая стадия – отдельный кешируемый слой; werf вычисляет для неё контентный идентификатор и при повторной сборке переиспользует те стадии, входные данные которых не изменились. Это резко сокращает время повторной сборки: пересобирается только то, что затронуто правкой.</p>
+<p>Собранные стадии лежат в хранилище стадий. В демо используется локальное хранилище и синхронизация через <code>--synchronization :local</code>: метаданные о стадиях хранятся локально, без внешнего lock-сервиса. Такой режим прост и подходит для одной машины сборки, но не рассчитан на параллельные сборки с нескольких раннеров. Сбросить накопленный кеш стадий можно командой <code>werf stages purge</code>; в демо это очистка (<code>02-purge-stages.sh</code>), одна из трёх базовых операций kube_ci.</p>
+<h2 id="чарт-.helm">Чарт <code>.helm/</code></h2>
+<p>Релиз werf описывает helm-совместимым чартом в каталоге <code>.helm/</code> продукта: <code>Chart.yaml</code>, шаблоны манифестов в <code>templates/</code>, значения окружения в <code>values-&lt;env&gt;.yaml</code> и зашифрованные секреты в <code>secrets-&lt;env&gt;.yaml</code>. werf рендерит шаблоны так же, как Helm, но дополнительно подставляет в них имена собранных образов – ту самую связь между сборкой и деплоем, которой нет у чистого Helm.</p>
+<p>Значения окружения werf получает двумя путями. Файл <code>values-&lt;env&gt;.yaml</code> подключается через <code>--values</code>, секреты – через <code>--secret-values</code> (требует ключ шифрования werf). Поверх них <code>kube_ci/utils/03-werf-converge.sh</code> прокидывает переменные из контракта продукта через <code>--set</code>. Сам контракт – <code>.helm/def.sh</code> – описан в <a href="../../apps/README.md">../../apps/README.md</a> и в статье <a href="delivery-to-k8s.md">о доставке в Kubernetes</a>.</p>
+<h2 id="установка-через-trdl">Установка через trdl</h2>
+<p>werf ставится менеджером версий <a href="https://trdl.dev">trdl</a> и активируется в текущей shell-сессии:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true"></a><span class="bu">source</span> <span class="st">&quot;</span><span class="va">$(</span><span class="ex">~/bin/trdl</span> use werf 2 stable<span class="va">)</span><span class="st">&quot;</span></span></code></pre></div>
+<p>Все скрипты демо используют единый канал <code>werf 2 stable</code>; старый <code>multiwerf</code> не применяется. trdl сам подтягивает нужную версию werf из заданного канала и проверяет её целостность, поэтому версия инструмента не фиксируется вручную в репозитории. Установка по шагам – регистрация репозитория werf в trdl, канал, активация в сессии, проверка и встраивание в CI – разобрана в <a href="werf-install.md">werf-install.md</a>; значение TUF root-key (security-релевантный параметр) берут только с официальной страницы <a href="https://werf.io/getting_started/" class="uri">https://werf.io/getting_started/</a>.</p>
+<h2 id="плюсы-минусы-безопасность">Плюсы, минусы, безопасность</h2>
+<p>Плюсы. Одна команда <code>converge</code> закрывает сборку, публикацию образов и релиз – не нужно вручную связывать <code>docker build</code>, <code>push</code> и <code>helm upgrade</code>. Контентная адресация стадий переиспользует кеш между запусками, поэтому повторная сборка выкатывает только изменившиеся слои. Чарт <code>.helm/</code> остаётся обычным Helm-чартом, навыки Helm переносятся напрямую.</p>
+<p>Минусы. Werf – ещё один инструмент в цепочке: его версия активируется в shell-сессии через trdl, а часть поведения настраивается флагами и env-переменными, которые приходится держать в голове. Stages-storage в registry растёт и требует периодической очистки.</p>
+<p>Безопасность. trdl проверяет целостность дистрибутива по TUF root-key – этот ключ берут только с официальной страницы werf, не из вторичных источников. Послабления giterminism и работы с registry, которые демо включает ради наглядности, разобраны в <a href="security-and-tradeoffs.md">Компромиссах и безопасности схемы</a>.</p>
+<h2 id="связанные-статьи">Связанные статьи</h2>
+<ul>
+<li><a href="werf-install.md">Установка werf</a></li>
+<li><a href="werf-vs-alternatives.md">werf против альтернатив</a></li>
+<li><a href="delivery-to-k8s.md">Доставка в Kubernetes</a></li>
+<li><a href="security-and-tradeoffs.md">Компромиссы и безопасность схемы</a></li>
+<li><a href="../kubernetes/requirements.md">Требования к кластеру</a></li>
+<li><a href="../../apps/README.md">Контракт продукта (apps/README.md)</a></li>
+<li><a href="../integrations/gitlab-ci.md">Подключение к GitLab CI</a></li>
+</ul>
+</body>
+</html>

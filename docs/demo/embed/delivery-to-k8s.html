@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>delivery-to-k8s.md</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    span.underline{text-decoration: underline;}
+    div.column{display: inline-block; vertical-align: top; width: 50%;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+  </style>
+  <link rel="stylesheet" href="embed.css" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">delivery-to-k8s.md</h1>
+</header>
+<h1 id="доставка-в-kubernetes">Доставка в Kubernetes</h1>
+<p>Это демо показывает одну модель доставки: единый контур <code>kube_ci</code> ставит разнородные по стеку продукты в уже развёрнутые кластеры двух окружений (dev и prod) по общему контракту <code>.helm/def.sh</code>. Кластеры в скоп демо не входят – они считаются готовыми (требования к ним – в <a href="../kubernetes/requirements.md">../kubernetes/requirements.md</a>). Контур не знает внутренностей продукта: он работает только с контрактом, поэтому Java/React и Python/Angular деплоятся одним и тем же кодом. Эта статья проходит весь поток доставки – от подготовки продуктов до применения релиза – и описывает базовые операции: публикацию, откат версии, снос и очистку. Устройство самого werf разобрано в <a href="werf-intro.md">Введении в werf</a>.</p>
+<p>В промышленном конвейере контур занимает место между CI-раннерами и кластерами. VCS отдаёт коммит раннеру (GitLab CI или Jenkins), раннер вызывает скрипты <code>kube_ci</code> – <code>pull_products</code>, <code>00-build-deploy</code>, <code>werf converge</code>, – а те кладут образы в registry и применяют релиз в неймспейс окружения. Подключение к конкретным CI-системам – в <a href="../integrations/gitlab-ci.md">GitLab CI</a> и <a href="../integrations/jenkins.md">Jenkins</a>.</p>
+<figure>
+<img src="../pics/industrial-cicd.png" alt="" /><figcaption>Встраивание контура kube_ci в конвейер CI/CD: VCS, CI-раннеры, kube_ci, registry, кластеры окружений</figcaption>
+</figure>
+<h2 id="контракт-вместо-знания-о-продукте">Контракт вместо знания о продукте</h2>
+<p><code>kube_ci</code> не содержит ничего специфичного для конкретного приложения. Всё, что ему нужно знать, продукт сообщает через файл <code>.helm/def.sh</code> – набор shell-функций по одной на окружение. Имя функции совпадает со значением в <code>productlist</code> окружения. Функция экспортирует переменные, которые контур прокидывает в werf: обязательные <code>APPNAME</code>, <code>ENVNAME</code>, <code>CI_URL</code>, опциональный <code>NAMESPACE</code> и любые <code>CI_*</code>. Релиз разворачивается в неймспейс <code>&lt;NAMESPACE&gt;-&lt;ENVNAME&gt;</code>, поэтому одно приложение в dev и prod не конфликтует даже на одном кластере. Полное описание контракта – в <a href="application-contract.md">Контракте приложения</a> и <a href="../../apps/README.md">../../apps/README.md</a>.</p>
+<p>Благодаря контракту добавление продукта не меняет код <code>kube_ci</code>: достаточно положить корректный <code>.helm/</code> и вписать продукт в <code>productlist</code>. Та же развязка позволяет окружениям отличаться только параметрами кластера в <code>&lt;env&gt;/k8s_defs</code>, не трогая логику доставки.</p>
+<h2 id="шаг-1-pull_products.sh">Шаг 1: pull_products.sh</h2>
+<p>Поток начинается с подготовки продуктов. В демо исходники лежат в репозитории, рядом, в каталоге <code>apps/</code>, а не клонируются из git. Скрипт <a href="../../kube_ci/dev/pull_products.sh"><code>pull_products.sh</code></a> создаёт в каталоге окружения подкаталог <code>products/</code> и связывает в него каждый продукт из <code>productlist</code> symlink’ом на <code>apps/&lt;product&gt;</code>. Так converge работает с продуктом по локальному пути, как если бы тот был склонирован. В реальном CI этот шаг заменяется на <code>git clone</code> или submodule – см. <a href="../integrations/gitlab-ci.md">../integrations/gitlab-ci.md</a>.</p>
+<h2 id="шаг-2-00-build-deploy.sh">Шаг 2: 00-build-deploy.sh</h2>
+<p>Публикацию запускает <a href="../../kube_ci/dev/00-build-deploy.sh"><code>00-build-deploy.sh</code></a> из каталога окружения. Без аргументов или с <code>--all</code> он деплоит все продукты из <code>productlist</code>, иначе – только перечисленные. Скрипт подключает библиотеку converge, читает <code>productlist</code> и <code>k8s_defs</code> окружения, экспортирует параметры кластера (<code>REGISTRY</code>, <code>KUBECONTEXT</code>, <code>KUBECONFIG</code>) и для каждого выбранного продукта заходит в его каталог и вызывает <code>deploy &lt;env-функция&gt;</code>.</p>
+<h2 id="шаг-3-deploy-в-03-werf-converge.sh">Шаг 3: deploy() в 03-werf-converge.sh</h2>
+<p>Вся работа с werf сосредоточена в функции <code>deploy()</code> из <a href="../../kube_ci/utils/03-werf-converge.sh"><code>utils/03-werf-converge.sh</code></a>. Её шаги:</p>
+<ul>
+<li>активирует werf через trdl (<code>trdl use werf 2 stable</code>) и подключает контракт продукта (<code>source .helm/def.sh</code>);</li>
+<li>вызывает env-функцию окружения; если <code>NAMESPACE</code> пуст, берёт <code>APPNAME</code>;</li>
+<li>при наличии <code>.helm/predeploy.sh</code> запускает его до converge – хук должен отработать раньше, потому что werf читает <code>.helm/tmp/</code> при рендере секрета (на этом построена dev-инъекция ssh-ключа, см. <a href="security-and-tradeoffs.md">компромиссы схемы</a>);</li>
+<li>задаёт <code>WERF_REPO="$REGISTRY/$APPNAME"</code> – адрес репозитория образов продукта;</li>
+<li>вычисляет целевой неймспейс <code>&lt;NAMESPACE&gt;-&lt;ENVNAME&gt;</code>;</li>
+<li>подхватывает <code>.helm/values-&lt;ENVNAME&gt;.yaml</code> (<code>--values</code>) и <code>.helm/secrets-&lt;ENVNAME&gt;.yaml</code> (<code>--secret-values</code>), если они есть;</li>
+<li>собирает из <code>def.sh</code> все <code>CI_*</code>-переменные (кроме <code>CI_TAG</code>) и пробрасывает их в helm через <code>--set</code> в нижнем регистре;</li>
+<li>если задан <code>CI_TAG</code>, добавляет version-тег образов <code>--use-custom-tag=%image%-$CI_TAG</code> (источник версии – файл <code>VERSION</code> продукта, см. <a href="../delivery/versioning.md">../delivery/versioning.md</a>).</li>
+</ul>
+<p>Затем выполняется сам converge:</p>
+<pre><code>werf converge \
+  --dev --env=$ENVNAME --synchronization :local \
+  --insecure-registry=true --skip-tls-verify-registry=true \
+  --atomic --timeout=300 --namespace=$NAMESPACE-$ENVNAME \
+  $values_param $secret_values_param $custom_tag_param \
+  --loose-giterminism=true $ci_values --set APPNAME=... --set DOMAIN=...</code></pre>
+<p>После converge, если есть <code>.helm/postdeploy.sh</code>, запускается он – обычно для печати URL развёрнутых ресурсов (фронт, бек, swagger, pgAdmin). Завершается <code>deploy()</code> переключением текущего kube-контекста на неймспейс продукта, чтобы последующие <code>kubectl</code> работали в нужном пространстве. Флаги <code>--insecure-registry</code>, <code>--skip-tls-verify-registry</code> и <code>--loose-giterminism</code> здесь – осознанные послабления демо, разобранные в <a href="security-and-tradeoffs.md">компромиссах схемы</a>.</p>
+<h2 id="базовые-операции">Базовые операции</h2>
+<p>Доставка сводится к небольшому набору операций, каждая запускается из каталога окружения <code>kube_ci/dev|prod/</code>.</p>
+<p>Публикация – <code>./pull_products.sh &amp;&amp; ./00-build-deploy.sh [--all|&lt;product&gt;]</code>. Собирает образы и применяет релиз через converge, как описано выше.</p>
+<p>Откат версии – <code>./03-rollback.sh &lt;product&gt; [revision]</code>. Под капотом <a href="../../kube_ci/utils/06-rollback.sh"><code>utils/06-rollback.sh</code></a> подключает контракт, вызывает env-функцию и через <code>helm rollback</code> возвращает релиз на ранее опубликованную ревизию. Без revision скрипт печатает <code>helm history</code> – список выкаченных версий. Возврат проходит без пересборки: образ целевой ревизии уже в registry. БД откат не трогает.</p>
+<p>Снос – <code>./01-dismiss.sh &lt;product&gt;|--all</code>. Под капотом <a href="../../kube_ci/utils/04-dismiss.sh"><code>utils/04-dismiss.sh</code></a> подключает контракт, вызывает env-функцию и выполняет <code>werf dismiss --with-namespace</code>, снося релиз вместе с его неймспейсом. Без аргумента скрипт отказывается работать, чтобы случайный запуск не снёс всё.</p>
+<p>Очистка – <code>./02-purge-stages.sh</code>. Сбрасывает локальный кеш стадий сборки (<code>werf stages purge</code>), освобождая место и заставляя следующую сборку идти с нуля.</p>
+<p>Подробные пошаговые сценарии этих операций – в <a href="../runbooks/README.md">../runbooks/</a>; рабочая часть поставки (модель окружений, секреты, версии) – в разделе <a href="../delivery/README.md">../delivery/</a>.</p>
+<h2 id="плюсы-минусы-безопасность">Плюсы, минусы, безопасность</h2>
+<p>Плюсы. Контур не знает внутренностей продукта и работает по контракту <code>.helm/def.sh</code>, поэтому один и тот же код доставки обслуживает оба разнородных продукта. Базовые операции (публикация, откат версии, снос, очистка) покрывают полный цикл эксплуатации релиза и запускаются одинаково в любом окружении.</p>
+<p>Минусы. Контракт переносит часть ответственности на продукт: ошибка в <code>def.sh</code> или несовпадение имён в <code>productlist</code> проявляется только на выкатке. Откат версии возвращает только релиз продукта – схему БД он не трогает, при несовместимой миграции её приводят к целевой версии вручную.</p>
+<p>Безопасность. converge в демо вызывается с послаблениями registry и loose-giterminism ради наглядности; в бою они снимают защиту канала и воспроизводимость. Разбор послаблений и боевых альтернатив – в <a href="security-and-tradeoffs.md">Компромиссах и безопасности схемы</a>.</p>
+<h2 id="связанные-статьи">Связанные статьи</h2>
+<ul>
+<li><a href="werf-intro.md">Введение в werf</a></li>
+<li><a href="werf-vs-alternatives.md">werf против альтернатив</a></li>
+<li><a href="application-contract.md">Контракт приложения</a></li>
+<li><a href="security-and-tradeoffs.md">Компромиссы и безопасность схемы</a></li>
+<li><a href="../../apps/README.md">Контракт продукта (apps/README.md)</a></li>
+<li><a href="../delivery/README.md">Поставка через kube_ci</a></li>
+<li><a href="../kubernetes/requirements.md">Требования к кластеру</a></li>
+<li><a href="../integrations/gitlab-ci.md">Подключение к GitLab CI</a></li>
+</ul>
+</body>
+</html>
