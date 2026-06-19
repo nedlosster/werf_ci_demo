@@ -371,6 +371,8 @@ insecure-registry, loose-giterminism, общий кластер dev/prod, nip.io
 ## Связанные статьи
 
 - [Слайды доклада](slides.md)
+- [Лента слайдов: колода под проекцию](talk-deck.html)
+- [Лента слайдов: суфлёр для докладчика](talk-flow.html)
 - [Банк вопросов и ответов](qa-bank.md)
 - [Контракт приложения](../concepts/application-contract.md)
 - [Введение в werf](../concepts/werf-intro.md)

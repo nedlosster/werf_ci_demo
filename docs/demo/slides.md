@@ -169,6 +169,8 @@ backup-слайды из [банка вопросов](qa-bank.md), которы
 ## Связанные статьи
 
 - [План доклада на 60 минут](talk-plan-60min.md)
+- [Лента слайдов: колода под проекцию](talk-deck.html)
+- [Лента слайдов: суфлёр для докладчика](talk-flow.html)
 - [Банк вопросов и ответов](qa-bank.md)
 - [Контракт приложения](../concepts/application-contract.md)
 - [Введение в werf](../concepts/werf-intro.md)

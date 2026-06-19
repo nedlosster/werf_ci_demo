@@ -1,0 +1,442 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Лента доклада</title>
+<!--
+  Лента слайдов доклada. Производное от docs/demo/slides.md и
+  docs/demo/talk-plan-60min.md: при правке тезисов или плана обновлять здесь же.
+  Режим задаётся константой MODE: 'flow' (суфлёр) или 'deck' (колода).
+  Диаграммы подключаются ссылками на ../pics/*.png.
+-->
+<style>
+  :root{
+    --bg:#eef1f5; --card:#ffffff; --ink:#1b2430; --muted:#5c6775;
+    --accent:#1f6feb; --accent-soft:#e7f0ff; --core:#0f7b56; --core-soft:#e3f5ec;
+    --line:#d6dce4; --shadow:0 1px 3px rgba(20,30,45,.08),0 6px 18px rgba(20,30,45,.06);
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font:16px/1.55 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    background:#f0f2f5; padding:.05em .35em; border-radius:4px; font-size:.92em}
+  a{color:var(--accent); text-decoration:none}
+
+  /* верхняя липкая полоса */
+  .topbar{
+    position:sticky; top:0; z-index:20; display:flex; align-items:center;
+    gap:12px; padding:9px 18px; background:rgba(27,36,48,.94); color:#fff;
+    font-size:13px; letter-spacing:.2px; backdrop-filter:blur(4px);
+  }
+  .topbar .t-title{font-weight:600}
+  .topbar .t-mode{margin-left:auto; padding:2px 10px; border-radius:20px;
+    background:var(--accent); font-size:12px; font-weight:600}
+
+  .page{max-width:980px; margin:0 auto; padding:0 20px 80px}
+
+  /* обложка */
+  .cover{padding:54px 0 26px; border-bottom:1px solid var(--line)}
+  .cover h1{font-size:34px; line-height:1.2; margin:0 0 14px}
+  .cover .sub{font-size:18px; color:var(--muted); margin:0 0 6px}
+  .cover .sub.s2{margin-bottom:18px}
+  .cover .lead{font-size:15px; color:var(--muted); max-width:70ch}
+
+  /* оглавление-тайминг */
+  .toc{margin:26px 0 0; background:var(--card); border:1px solid var(--line);
+    border-radius:12px; box-shadow:var(--shadow); overflow:hidden}
+  .toc h2{font-size:14px; text-transform:uppercase; letter-spacing:.8px;
+    color:var(--muted); margin:0; padding:14px 18px; border-bottom:1px solid var(--line)}
+  .toc ol{margin:0; padding:6px 0; list-style:none; counter-reset:b}
+  .toc li{display:flex; align-items:baseline; gap:12px; padding:6px 18px}
+  .toc li a{flex:1; color:var(--ink)}
+  .toc li a:hover{color:var(--accent)}
+  .toc .num{width:26px; color:var(--muted); font-variant-numeric:tabular-nums; text-align:right}
+  .toc .time{color:var(--muted); font-size:13px; font-variant-numeric:tabular-nums; white-space:nowrap}
+  .toc .core-dot{display:inline-block; width:8px; height:8px; border-radius:50%;
+    background:var(--core); margin-left:6px; vertical-align:middle}
+
+  /* разделитель блока */
+  .block{margin-top:48px; border-top:4px solid var(--accent); padding-top:18px;
+    scroll-margin-top:54px}
+  .block.is-core{border-top-color:var(--core)}
+  .block-head{display:flex; align-items:flex-start; gap:14px; flex-wrap:wrap}
+  .block-num{flex:0 0 auto; width:42px; height:42px; border-radius:50%;
+    background:var(--accent); color:#fff; font-size:19px; font-weight:700;
+    display:flex; align-items:center; justify-content:center}
+  .is-core .block-num{background:var(--core)}
+  .block-title{flex:1 1 280px; min-width:0}
+  .block-title h2{margin:0; font-size:22px; line-height:1.25}
+  .badges{display:flex; gap:8px; flex-wrap:wrap; margin-left:auto; align-items:center}
+  .badge{font-size:12px; font-weight:600; padding:4px 11px; border-radius:20px; white-space:nowrap}
+  .badge.time{background:var(--accent-soft); color:var(--accent); font-variant-numeric:tabular-nums}
+  .badge.core{background:var(--core-soft); color:var(--core)}
+
+  /* цель и заметка спикера (только flow) */
+  .goal{margin:14px 0 0; color:var(--muted); font-style:italic; font-size:15px}
+  .goal b{font-style:normal; color:var(--ink)}
+  .note{margin:14px 0 0; background:#fbfaf4; border:1px solid #ece6cf;
+    border-left:4px solid #c9a227; border-radius:10px; padding:14px 16px}
+  .note h4{margin:0 0 8px; font-size:12px; text-transform:uppercase;
+    letter-spacing:.8px; color:#8a6d12}
+  .note p{margin:0 0 10px}
+  .note p:last-child{margin-bottom:0}
+  .note ol{margin:6px 0 10px; padding-left:22px}
+  .note ol li{margin:3px 0}
+  .note .fallback{font-size:14px; color:var(--muted)}
+  .note .fallback b{color:var(--ink)}
+
+  /* карточка слайда */
+  .slide{margin:18px 0 0; background:var(--card); border:1px solid var(--line);
+    border-radius:12px; box-shadow:var(--shadow); padding:20px 22px}
+  .slide-head{display:flex; align-items:baseline; gap:10px; margin-bottom:6px}
+  .slide-no{font-size:12px; font-weight:700; color:#fff; background:var(--muted);
+    padding:2px 9px; border-radius:6px; font-variant-numeric:tabular-nums}
+  .slide h3{margin:0; font-size:19px; line-height:1.3}
+  .theses{margin:8px 0 0; padding-left:0; list-style:none}
+  .theses li{position:relative; padding-left:20px; margin:7px 0; font-size:16.5px}
+  .theses li::before{content:""; position:absolute; left:4px; top:.62em;
+    width:6px; height:6px; border-radius:50%; background:var(--accent)}
+  .is-core-slide .theses li::before{background:var(--core)}
+  .show{margin-top:14px; padding-top:11px; border-top:1px dashed var(--line);
+    font-size:13.5px; color:var(--muted)}
+  .show b{color:var(--ink); font-weight:600}
+  figure{margin:16px 0 0; text-align:center}
+  figure img{max-width:100%; height:auto; border:1px solid var(--line);
+    border-radius:8px; background:#fff}
+  figure figcaption{margin-top:7px; font-size:13px; color:var(--muted)}
+
+  .end{margin-top:48px; padding-top:18px; border-top:4px solid var(--line);
+    color:var(--muted); font-size:14px}
+  .end a{margin-right:14px}
+
+  @media (max-width:640px){
+    .page{padding:0 14px 60px}
+    .cover h1{font-size:27px}
+    .badges{margin-left:0; width:100%}
+  }
+  @media print{
+    body{background:#fff}
+    .topbar{display:none}
+    .toc,.slide,.note{box-shadow:none}
+    .block{break-before:page; border-top-width:3px}
+    .block:first-of-type{break-before:auto}
+    .slide{break-inside:avoid}
+    figure{break-inside:avoid}
+    a{color:var(--ink)}
+  }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <span class="t-title">Доставка по контракту: два стека — один <code style="background:rgba(255,255,255,.15);color:#fff">werf converge</code></span>
+  <span class="t-mode" id="modeBadge"></span>
+</div>
+<main class="page" id="app"></main>
+
+<script>
+const MODE = 'deck'; // 'flow' — суфлёр (цель + заметки); 'deck' — чистая колода
+
+const META = {
+  title: "Доставка по контракту: два стека — один werf converge",
+  sub1: "Разработка прямо в dev-кластере, где dev неотличим от prod.",
+  sub2: "Дистилят практики Kubernetes 2020–2025.",
+  lead: "Лента слайдов доклада на 60 минут: одиннадцать блоков с таймингом, тезисами и диаграммами. Прокручивается сверху вниз — по ней ведётся рассказ. Границы блоков и слайдов отчёркнуты; ядро часа выделено зелёным."
+};
+
+const BLOCKS = [
+  {
+    n:1, title:"Вступление: дистилляция опыта 2020–2025", dur:"3 мин", cum:"0:00–3:00",
+    goal:"Задать рамку и сразу обозначить, что демонстрируется не приложение, а способ его доставки и разработки, выросший из практики.",
+    note:["Открываем рамкой: это не разбор приложения, а дистилляция личного опыта разработки под Kubernetes за 2020–2025. Контур и приёмы пришли из реальной работы, а не из учебного примера. Репозиторий показывает, как единый CI-контур ставит разнородные приложения в уже развёрнутые кластеры двух окружений по общему контракту. Разворачивание самих кластеров — вне скопа, работаем против готового кластера. Бизнес-логика продуктов минимальна по замыслу: внимание на том, как доставляем и разрабатываем, а не что."],
+    slides:[
+      {no:1, title:"Титул", theses:[
+        "демо: единый CI-контур ставит разнородные приложения в готовые кластеры dev и prod",
+        "дистилляция личного опыта разработки под Kubernetes за 2020–2025, не учебный пример",
+        "граница доклада — как доставляем и как разрабатываем, а не что доставляем",
+        "два контрастных продукта, общий контракт <code>.helm/def.sh</code>, разработка прямо в кластере"
+      ], show:"титульный кадр и индекс документации одним экраном"},
+      {no:2, title:"Дистилляция опыта 2020–2025", theses:[
+        "контур и приёмы выросли из реальной работы, а не из учебного примера",
+        "демонстрируется способ доставки и разработки, не приложение",
+        "кластеры считаем уже развёрнутыми, их разворачивание вне скопа",
+        "бизнес-логика продуктов минимальна по замыслу"
+      ], show:"обзор продуктов"}
+    ]
+  },
+  {
+    n:2, title:"Проблема доставки и werf converge", dur:"6 мин", cum:"3:00–9:00",
+    goal:"Объяснить, почему доставка в Kubernetes распадается на две половины, и ввести werf converge как инструмент, который их сшивает из одного git-состояния.",
+    note:["Доставка в Kubernetes распадается на две половины — сборка образа и применение релиза. Большинство инструментов закрывают одну, а стык (синхронизация тегов, пересборка изменившихся слоёв) держит инженер скриптами; эта работа повторяется в каждой команде и плохо переносится между проектами. werf совмещает обе половины в одной программе и одном запуске. Центральная команда — <code>werf converge</code>: собирает недостающие образы, публикует их в registry и применяет релиз; идемпотентна, в демо запускается атомарно. Сборка разбита на кешируемые стадии — пересобирается только затронутое правкой. По умолчанию werf требует git (giterminism); в демо это ослаблено ради сборки из рабочего дерева — вернёмся к этому в блоке про контекст. На экране показать строку активации канала: <code>source \"$(~/bin/trdl use werf 2 stable)\"</code>."],
+    slides:[
+      {no:3, title:"Проблема доставки в Kubernetes", theses:[
+        "доставка распадается на сборку образа и применение релиза",
+        "большинство инструментов закрывают одну половину",
+        "стык держит инженер: синхронизация тегов, пересборка слоёв",
+        "работа повторяется в каждой команде и плохо переносится"
+      ], show:"доставка в Kubernetes, схема industrial-cicd",
+        img:"industrial-cicd.png", cap:"Промышленный CI/CD: сборка → registry → релиз"},
+      {no:4, title:"werf converge сшивает обе половины", theses:[
+        "сборка и применение релиза в одной программе из одного git-состояния",
+        "<code>werf converge</code>: собрать, опубликовать, применить; идемпотентен, в демо атомарен",
+        "сборка по кешируемым стадиям, пересборка только затронутого",
+        "giterminism по умолчанию; в демо ослаблен — см. контекстный слайд"
+      ], show:"введение в werf, поток converge",
+        img:"converge-flow.png", cap:"Поток werf converge: build → publish → deploy"}
+    ]
+  },
+  {
+    n:3, title:"Контур kube_ci и контракт .helm/def.sh", dur:"6 мин", cum:"9:00–15:00",
+    core:"ядро · тема 1",
+    goal:"Показать, что kube_ci — тонкая bash-обёртка над werf, а развязка с продуктом держится на контракте .helm/def.sh. Это первая тема ядра.",
+    note:["Первая тема ядра. kube_ci сведён к базовым операциям над уже развёрнутым кластером; логика вынесена в общие библиотеки <code>utils/</code>, а окружения подмешивают локальные <code>k8s_defs</code> и <code>productlist</code>. Контур не знает внутренностей продукта — он работает по контракту <code>.helm/def.sh</code>: env-функция окружения экспортирует <code>APPNAME</code>, <code>ENVNAME</code>, <code>CI_URL</code>, <code>CI_TAG</code> и опционально <code>NAMESPACE</code>. <code>deploy()</code> читает только реально экспортированные CI_*-переменные (<code>${!CI_@}</code>) и пробрасывает их в helm как <code>--set</code>; <code>CI_TAG</code> идёт отдельным тегом образов. Весь обмен между продуктом и контуром — через эти переменные и набор образов из <code>werf.yaml</code>; новый продукт подключается без правок в kube_ci."],
+    slides:[
+      {no:5, title:"Контур kube_ci и контракт", theses:[
+        "тонкая bash-обёртка над werf, не своя система сборки",
+        "базовые операции над готовым кластером; логика — в <code>utils/</code>",
+        "окружения подмешивают локальные <code>k8s_defs</code> и <code>productlist</code>",
+        "контракт <code>.helm/def.sh</code>: <code>APPNAME</code>, <code>ENVNAME</code>, <code>CI_URL</code>, <code>CI_TAG</code>, опц. <code>NAMESPACE</code>",
+        "<code>deploy()</code> читает только <code>${!CI_@}</code> и пробрасывает в helm; контур не знает продукт"
+      ], show:"диаграмма архитектуры, контракт приложения",
+        img:"architecture.png", cap:"Архитектура: apps → kube_ci → кластер"}
+    ]
+  },
+  {
+    n:4, title:"Два контрастных продукта как доказательство", dur:"5 мин", cum:"15:00–20:00",
+    core:"ядро · тема 1",
+    goal:"Объяснить, зачем в демо два продукта на разных стеках и что именно это доказывает про развязку из блока 3.",
+    note:["app1-java-react (React + Spring Boot) и app2-python-angular (Angular + FastAPI) разведены по языку, веб-фреймворку, менеджерам пакетов бэка (Maven / pip) и фронта (pnpm / npm) и модели health-проб. Один продукт ничего не доказывает — под него легко подогнать оркестрацию; два разных стека показывают, что в контуре нет скрытого знания о приложении. kube_ci исполняет для обоих один <code>werf converge</code> без единой ветки «если это app1»; различия живут в <code>Dockerfile</code>, <code>werf.yaml</code> и чарте продукта."],
+    slides:[
+      {no:6, title:"Два контрастных продукта", theses:[
+        "<code>app1-java-react</code>: React + Spring Boot",
+        "<code>app2-python-angular</code>: Angular + FastAPI",
+        "разведены по языку, веб-фреймворку, менеджерам пакетов (Maven/pip, pnpm/npm), health-пробам",
+        "один converge на оба, без ветки «если это app1»",
+        "различия живут в <code>Dockerfile</code>, <code>werf.yaml</code>, чарте"
+      ], show:"обзор продуктов, таблица стеков, анатомия продукта",
+        img:"product-anatomy.png", cap:"Анатомия продукта: Dockerfile, werf.yaml, чарт"}
+    ]
+  },
+  {
+    n:5, title:"Ядро: разработка в кластере, dev≈prod, отладка k8s", dur:"9 мин", cum:"20:00–29:00",
+    core:"ядро · тема 2",
+    goal:"Показать главный приём схемы: разработка идёт прямо в кластере, dev почти идентичен prod, поэтому отлаживается сама логика Kubernetes, а не одни контейнеры. Вторая тема ядра и подводка к живой демонстрации.",
+    note:["В dev продукт разворачивается не Deployment'ом, а долгоживущим подом-песочницей (<code>sleep infinity</code>) на базе StatefulSet, к которому разработчик подключается через VS Code Remote и пишет код прямо в поде. Dev собран из тех же кубовых объектов, что prod: чарт, Ingress, Service, StatefulSet с Postgres, ConfigMap, Secret — класс расхождений «локально работало, в кластере нет» почти исчезает. В кластере отлаживается то, чего docker-compose не показывает: Ingress-маршрутизация (<code>/api</code>, <code>/pgadmin</code>, host по nip.io, rewrite), service discovery по DNS и <code>targetPort</code>, readiness/liveness-пробы, поведение rollout и <code>updateStrategy: OnDelete</code> у Postgres, монтирование Secret и ConfigMap, init-контейнеры, сам werf converge с хуками. docker-compose моделирует только контейнеры и docker-сеть — Kubernetes-слоя в нём нет вовсе, это другая модель, а не упрощённая копия dev. Один артефакт доставки без дрейфа: dev и prod различаются только окружением в <code>.helm/def.sh</code>. Тяжёлое (maven, node, pip, кеши, базы) живёт на ноде кластера, VS Code Remote остаётся лёгким редактором."],
+    slides:[
+      {no:7, title:"Разработка прямо в кластере", theses:[
+        "dev — долгоживущий под-песочница (<code>sleep infinity</code>) на StatefulSet, VS Code Remote",
+        "dev собран из тех же кубовых объектов, что prod — расхождение сред почти исчезает",
+        "тяжёлое (maven, node, pip, базы) на ноде; редактор лёгкий, ноутбук не нагружен",
+        "один артефакт доставки: dev и prod различаются только окружением в <code>.helm/def.sh</code>"
+      ], show:"разработка внутри кластера, <code>kubectl -n app1-java-react-dev get pods</code>"},
+      {no:8, title:"dev в кластере vs docker-compose", theses:[
+        "docker-compose моделирует только контейнеры и docker-сеть — Kubernetes-слоя нет",
+        "в кластере отлаживается то, чего compose не показывает:",
+        "Ingress-маршрутизация (<code>/api</code>, <code>/pgadmin</code>, host nip.io, rewrite), service discovery по DNS и <code>targetPort</code>",
+        "readiness/liveness-пробы, rollout, <code>updateStrategy: OnDelete</code> у Postgres",
+        "монтирование Secret и ConfigMap, init-контейнеры, сам <code>werf converge</code> с хуками"
+      ], show:"разработка внутри кластера, раздел «Зачем dev в кластере, а не docker-compose»"}
+    ]
+  },
+  {
+    n:6, title:"Ядро: живой цикл работы на app1 (демонстрация)", dur:"10 мин", cum:"29:00–39:00",
+    core:"ядро · тема 2 · пик",
+    goal:"Показать вживую полный цикл работы в dev-поде на фронте app1: правка компонента → мгновенный Vite HMR в браузере через ingress → git push → converge в dev с новой версией. Это пик доклада.",
+    note:["Пик доклада. Цикл делится на две зоны: внутренняя петля (правка → отладка → тест) замыкается на dev-поде и повторяется сколько угодно раз; внешний контур (push, выкат через kube_ci) проходится реже. Синхронизация между зонами — только через git: ни <code>scp</code>, ни <code>rsync</code> между рабочей машиной и деплой-сервером. Внутри пода dev-сервер фронта app1 поднимается скриптом <code>frontend/dev-start.sh</code> (<code>npm install</code> + <code>vite --host 0.0.0.0 --port 8080</code>); сервер виден снаружи через ingress по nip.io, потому что слушает <code>targetPort</code> dev-Service и в <code>vite.config.ts</code> задан <code>allowedHosts</code> (<code>.nip.io</code>). Правка React-компонента подхватывается Vite HMR мгновенно — браузер обновляет кадр без перезагрузки. После проверки правка уходит <code>git push</code> с рабочей машины, затем converge в dev выкатывает релиз с новой версией."],
+    demo:[
+      "В подключённом к поду VS Code Remote открыть рабочую копию фронта app1 в <code>/workspace/werf_ci_demo/apps/app1-java-react/frontend</code>.",
+      "Выполнить <code>git pull</code> в <code>/workspace/werf_ci_demo</code>, чтобы рабочая копия была актуальна.",
+      "Править видимый React-компонент (заголовок, текст, цвет) и сохранить файл.",
+      "Показать браузер на <code>app1-java-react-dev-&lt;NODE_IP&gt;.nip.io</code>: Vite HMR обновляет кадр мгновенно, без перезагрузки.",
+      "Сделать <code>git push</code> правки с рабочей машины.",
+      "Показать заранее прогнанный (или запущенный параллельно) converge в dev: <code>./00-build-deploy.sh app1-java-react</code> поднимает релиз с новой версией <code>CI_TAG</code>."
+    ],
+    fallback:"Если HMR или ingress не отвечает на сцене — показать заранее снятый результат: скриншот или короткую запись правки и обновления кадра, плюс готовый вывод converge. Сборку в любом случае держать прогнанной заранее, чтобы она не съедала время блока.",
+    slides:[
+      {no:9, title:"Живой цикл: две зоны", theses:[
+        "внутренняя петля правка → отладка → тест замыкается на dev-поде, повторяется часто",
+        "внешний контур push → выкат через <code>kube_ci</code> проходится реже",
+        "синхронизация только через git: ни <code>scp</code>, ни <code>rsync</code> между машинами",
+        "dev-сервер фронта app1 — <code>dev-start.sh</code>: <code>npm install</code> + <code>vite --host 0.0.0.0 --port 8080</code>"
+      ], show:"диаграмма цикла работы в dev-поде",
+        img:"dev-workflow-cycle.png", cap:"Цикл работы в dev-поде: правка → HMR → git push → converge"},
+      {no:10, title:"Демонстрация на app1", theses:[
+        "правка React-компонента → Vite HMR мгновенно в браузере через ingress (nip.io)",
+        "сервер виден снаружи: слушает <code>targetPort</code> dev-Service, <code>allowedHosts</code> <code>.nip.io</code> в <code>vite.config.ts</code>",
+        "проверено в dev → <code>git push</code> с рабочей машины → converge в dev с новой версией",
+        "сборку прогнать заранее/параллельно; запасной вариант — заранее снятый результат"
+      ], show:"живая правка фронта app1 на <code>app1-java-react-dev-&lt;NODE_IP&gt;.nip.io</code>, вывод converge с новой версией"}
+    ]
+  },
+  {
+    n:7, title:"Кеши и persistent-volume'ы dev-подов", dur:"3 мин", cum:"39:00–42:00",
+    goal:"Кратко закрыть вопрос, почему повторный вход в петлю не платит за пересоздание состояния пода.",
+    note:["dev-StatefulSet объявляет два PVC на под: <code>workspace</code> (<code>/workspace</code> — клон монорепо, исходники, <code>node_modules</code>, артефакты сборки) и <code>homeapp</code> (<code>/home/app/homeapp</code> — кеши пакетных менеджеров и <code>.vscode-server</code>). Симлинки из домашнего каталога (<code>~/.m2</code>, <code>~/.npm</code>, <code>~/.cache</code>, <code>~/.local</code>) ведут на том <code>homeapp</code>, поэтому кеш пакетов и расширения VS Code переживают пересоздание пода и перезагрузку ВМ. Первый клон, первый <code>npm install</code> и первая сборка — разовая плата; дальше под собирается из локального кеша без обращения к сети. Тома уничтожаются только при сносе релиза с удалением неймспейса, а не при рестарте пода."],
+    slides:[
+      {no:11, title:"Кеши и persistent-volume'ы dev-подов", theses:[
+        "два PVC на под: <code>workspace</code> (клон, исходники, <code>node_modules</code>, артефакты) и <code>homeapp</code> (кеши, <code>.vscode-server</code>)",
+        "симлинки <code>~/.m2</code>, <code>~/.npm</code>, <code>~/.cache</code>, <code>~/.local</code> ведут на том <code>homeapp</code>",
+        "первый клон и <code>npm install</code> — разовая плата; дальше из кеша без сети",
+        "тома живут дольше пода: рестарт и перезагрузка ВМ их не трогают"
+      ], show:"кеши и persistent-volume'ы dev-сред, таблица двух PVC"}
+    ]
+  },
+  {
+    n:8, title:"Ядро: операции на живых командах, dev/prod", dur:"6 мин", cum:"42:00–48:00",
+    core:"ядро · тема 3",
+    goal:"Провести зрителя по жизненному циклу доставки на живых командах и показать, что dev и prod обслуживаются одним контуром. Это третья тема ядра.",
+    note:["Третья тема ядра. Публикация — <code>./pull_products.sh &amp;&amp; ./00-build-deploy.sh [--all|&lt;product&gt;]</code>: pull связывает <code>apps/&lt;product&gt;</code> symlink'ом в <code>products/</code>, build-deploy вызывает converge на каждый выбранный продукт. Откат версии — <code>./03-rollback.sh &lt;product&gt; [revision]</code>: без revision печатает <code>helm history</code>, с revision делает <code>helm rollback</code>; это ЧП-возврат к рабочей ревизии за секунды — образ уже в registry, без пересборки; БД откат не трогает. Снос — <code>./01-dismiss.sh &lt;product&gt;|--all</code>: удаляет релиз вместе с неймспейсом, требует явного аргумента. Очистка — <code>./02-purge-stages.sh</code>: сбрасывает локальный кеш стадий сборки, релизы не трогает. Каждое окружение — самодостаточный каталог <code>kube_ci/dev/</code> и <code>kube_ci/prod/</code> с одинаковым набором файлов; релиз уходит в неймспейс <code>&lt;NAMESPACE&gt;-&lt;ENVNAME&gt;</code>, поэтому одно приложение в dev и prod не конфликтует на одном кластере. Временно оба окружения указывают на один preprod-кластер; при переходе на раздельные меняется только <code>KUBECONTEXT</code> и <code>REGISTRY</code> в <code>k8s_defs</code>."],
+    slides:[
+      {no:12, title:"Операции kube_ci", theses:[
+        "публикация: <code>./pull_products.sh &amp;&amp; ./00-build-deploy.sh [--all|&lt;product&gt;]</code>",
+        "откат версии: <code>./03-rollback.sh &lt;product&gt; [revision]</code>, <code>helm rollback</code>, БД не трогает",
+        "снос: <code>./01-dismiss.sh &lt;product&gt;|--all</code>, без аргумента отказывается",
+        "очистка: <code>./02-purge-stages.sh</code>, сбрасывает кеш стадий, релизы не трогает"
+      ], show:"топология окружения (deploy-topology), живой прогон публикации в dev",
+        img:"deploy-topology.png", cap:"Топология окружений dev/prod, неймспейсы"},
+      {no:13, title:"dev и prod одним контуром", theses:[
+        "<code>kube_ci/dev/</code> и <code>kube_ci/prod/</code> — самодостаточные каталоги, одинаковый набор файлов",
+        "различие — <code>k8s_defs</code> и env-функция продукта из <code>productlist</code>",
+        "релиз в неймспейс <code>&lt;NAMESPACE&gt;-&lt;ENVNAME&gt;</code>, dev и prod не конфликтуют",
+        "временно один preprod-кластер; разделение — смена <code>KUBECONTEXT</code> и <code>REGISTRY</code>"
+      ], show:"один контур, два окружения, вывод <code>kubectl get ns</code>"}
+    ]
+  },
+  {
+    n:9, title:"Контекст: компромиссы, CI, DORA, секреты, версии", dur:"2 мин", cum:"48:00–50:00",
+    goal:"Честно назвать послабления демо и обозначить, куда схема растёт, без углубления. Перечисление с отсылками к профильным статьям.",
+    note:["Контекст одним кадром, без углубления. Послабления демо обратимы: insecure-registry (HTTP / skip-TLS) ради in-cluster registry на nip.io, <code>--loose-giterminism</code> (сборка из рабочего дерева), общий preprod-кластер для dev и prod, хосты на nip.io вместо реального DNS и TLS, ключ <code>WERF_SECRET_KEY</code> на машине сборки, dev-под с примонтированным ssh-ключом — при переносе в прод меняется конфигурация окружения, не логика доставки. Те же скрипты оборачиваются в пайплайн внешнего CI: публикация — <code>deploy-dev</code>/<code>deploy-prod</code>, откат — <code>rollback</code>, очистка — <code>cleanup</code>; типовой поток — автодеплой в dev, ручной промоут в prod. Четыре метрики DORA снимаются с артефактов контура (статусы и метки времени job-ов, git-история с <code>VERSION</code>, факты запуска скриптов); кода сбора в репозитории нет, описана концепция. Секреты: пароли в <code>.helm/secrets-&lt;env&gt;.yaml</code> шифрует werf по <code>WERF_SECRET_KEY</code>; версия едина на продукт — <code>VERSION</code> раскатывается <code>set-version.sh</code> и отдаётся как <code>CI_TAG</code>."],
+    slides:[
+      {no:14, title:"Контекст: компромиссы, CI, DORA, секреты, версии", theses:[
+        "послабления обратимы: insecure-registry, <code>--loose-giterminism</code>, общий кластер dev/prod, nip.io, ключ werf, dev-SSH-под",
+        "те же скрипты в пайплайне CI: <code>deploy-dev</code>/<code>deploy-prod</code>, <code>rollback</code>, <code>cleanup</code>; автодеплой dev, ручной промоут prod",
+        "четыре метрики DORA с артефактов контура; кода сбора в репозитории нет",
+        "секреты в <code>.helm/secrets-&lt;env&gt;.yaml</code> шифрует werf по <code>WERF_SECRET_KEY</code>; версия <code>VERSION</code> → <code>CI_TAG</code>"
+      ], show:"компромиссы и безопасность схемы одним кадром-перечнем",
+        img:"dora-flow.png", cap:"Метрики DORA: статусы job-ов, временные метки"}
+    ]
+  },
+  {
+    n:10, title:"Выводы", dur:"2 мин", cum:"50:00–52:00",
+    goal:"Собрать доклад в одно утверждение.",
+    note:["Контур опирается на контракт <code>.helm/def.sh</code>, поэтому два разнородных продукта доставляются одним кодом. Разработка идёт прямо в кластере: dev почти идентичен prod, отлаживается сама логика Kubernetes, а цикл правка → push → converge замыкается через git. werf сшивает сборку и релиз из одного git-состояния и сводит доставку к набору операций. Послабления демо понятны и обратимы — при переносе в прод меняется конфигурация окружения, не логика доставки. Всё это — дистилляция практики 2020–2025, а не учебная конструкция."],
+    slides:[
+      {no:15, title:"Выводы", theses:[
+        "контракт <code>.helm/def.sh</code> — два разнородных продукта одним кодом",
+        "разработка прямо в кластере: dev≈prod, отладка k8s, цикл правка → push → converge через git",
+        "werf сшивает сборку и релиз из одного git-состояния, доставка — набор операций",
+        "послабления демо понятны и обратимы: в проде меняется конфигурация, не логика",
+        "всё это — дистилляция практики 2020–2025"
+      ], show:"диаграмма архитектуры финальным кадром",
+        img:"architecture.png", cap:"Архитектура: apps → kube_ci → кластер (финальный кадр)"}
+    ]
+  },
+  {
+    n:11, title:"Вопросы", dur:"8 мин", cum:"52:00–60:00",
+    goal:"Ответить на вопросы аудитории.",
+    note:["Открываем обсуждение. Острые места предсказуемы — держать короткий ответ и ссылку на профильную статью по каждому: чем dev-in-cluster лучше docker-compose, что отлаживается в кластере и не видно в compose, как переживают рестарт кеши и волумы, как работает <code>git pull</code> по ключу в поде, не дорого ли держать dev-поды, а также insecure-registry, loose-giterminism, общий кластер dev/prod, nip.io, ключ werf. Заготовленные ответы — в банке вопросов."],
+    slides:[
+      {no:16, title:"Вопросы", theses:[
+        "открыть обсуждение",
+        "backup-слайды держать наготове: dev-in-cluster vs docker-compose, что отлаживается в кластере, кеши/волумы при рестарте, <code>git pull</code> по ключу в поде, цена dev-подов",
+        "плюс острые места схемы: insecure-registry, loose-giterminism, общий кластер, nip.io, ключ werf"
+      ], show:"банк вопросов как набор скрытых backup-слайдов"}
+    ]
+  }
+];
+
+const RELATED = [
+  ["План доклада на 60 минут","talk-plan-60min.md"],
+  ["Слайды доклада","slides.md"],
+  ["Банк вопросов и ответов","qa-bank.md"],
+  ["Индекс документации","../README.md"]
+];
+
+function esc(){} // тезисы уже содержат безопасную разметку из массива
+
+function render(){
+  document.getElementById('modeBadge').textContent =
+    MODE === 'flow' ? 'версия: суфлёр' : 'версия: колода';
+  document.title = MODE === 'flow'
+    ? 'Лента доклада — суфлёр' : 'Лента доклада — колода';
+
+  const app = document.getElementById('app');
+  const parts = [];
+
+  // обложка
+  parts.push(`<header class="cover">
+    <h1>${META.title}</h1>
+    <p class="sub">${META.sub1}</p>
+    <p class="sub s2">${META.sub2}</p>
+    <p class="lead">${META.lead}</p>
+  </header>`);
+
+  // оглавление-тайминг
+  parts.push(`<nav class="toc"><h2>Тайминг · 60 минут</h2><ol>` +
+    BLOCKS.map(b => `<li>
+        <span class="num">${b.n}.</span>
+        <a href="#b${b.n}">${b.title}${b.core ? '<span class="core-dot" title="ядро"></span>' : ''}</a>
+        <span class="time">${b.dur} · ${b.cum}</span>
+      </li>`).join('') +
+    `</ol></nav>`);
+
+  // блоки
+  for(const b of BLOCKS){
+    const isCore = !!b.core;
+    let s = `<section class="block${isCore?' is-core':''}" id="b${b.n}">
+      <div class="block-head">
+        <div class="block-num">${b.n}</div>
+        <div class="block-title"><h2>${b.title}</h2></div>
+        <div class="badges">
+          ${isCore?`<span class="badge core">${b.core}</span>`:''}
+          <span class="badge time">${b.dur} · ${b.cum}</span>
+        </div>
+      </div>`;
+
+    if(MODE === 'flow'){
+      s += `<p class="goal"><b>Цель:</b> ${b.goal}</p>`;
+      let noteHtml = `<div class="note"><h4>Заметка спикера</h4>` +
+        b.note.map(p=>`<p>${p}</p>`).join('');
+      if(b.demo){
+        noteHtml += `<p><b>Мини-сценарий демонстрации</b> (dev-сервер поднят заранее, браузер открыт на хосте ingress):</p>`;
+        noteHtml += `<ol>` + b.demo.map(d=>`<li>${d}</li>`).join('') + `</ol>`;
+      }
+      if(b.fallback){
+        noteHtml += `<p class="fallback"><b>Запасной вариант.</b> ${b.fallback}</p>`;
+      }
+      noteHtml += `</div>`;
+      s += noteHtml;
+    }
+
+    for(const sl of b.slides){
+      s += `<article class="slide${isCore?' is-core-slide':''}">
+        <div class="slide-head">
+          <span class="slide-no">Слайд ${sl.no}</span>
+          <h3>${sl.title}</h3>
+        </div>
+        <ul class="theses">${sl.theses.map(t=>`<li>${t}</li>`).join('')}</ul>
+        <div class="show"><b>Показать:</b> ${sl.show}.</div>
+        ${sl.img?`<figure><img src="../pics/${sl.img}" alt="${sl.cap||''}" loading="lazy"><figcaption>${sl.cap||''}</figcaption></figure>`:''}
+      </article>`;
+    }
+
+    s += `</section>`;
+    parts.push(s);
+  }
+
+  // подвал
+  parts.push(`<footer class="end">
+    <div>Связанные материалы:</div>
+    <div style="margin-top:8px">${RELATED.map(r=>`<a href="${r[1]}">${r[0]}</a>`).join('')}</div>
+  </footer>`);
+
+  app.innerHTML = parts.join('\n');
+}
+render();
+</script>
+</body>
+</html>
