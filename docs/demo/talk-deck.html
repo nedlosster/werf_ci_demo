@@ -3,144 +3,146 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Лента доклада</title>
+<title>Презентация доклада</title>
 <!--
-  Лента слайдов доклada. Производное от docs/demo/slides.md и
-  docs/demo/talk-plan-60min.md: при правке тезисов или плана обновлять здесь же.
-  Режим задаётся константой MODE: 'flow' (суфлёр) или 'deck' (колода).
-  Диаграммы подключаются ссылками на ../pics/*.png.
+  Полноэкранная презентация доклада. Один слайд на экран, навигация вперёд/назад.
+  Содержание (META + BLOCKS) — копия один-в-один из docs/demo/talk-flow.html;
+  при правке тезисов синхронизировать оба файла. Диаграммы — ссылки на ../pics/*.png,
+  ссылки на исходники — на GitHub (REPO ниже). Управление: ← →, PageUp/Down,
+  Space, Home/End, F — во весь экран.
 -->
 <style>
   :root{
-    --bg:#eef1f5; --card:#ffffff; --ink:#1b2430; --muted:#5c6775;
-    --accent:#1f6feb; --accent-soft:#e7f0ff; --core:#0f7b56; --core-soft:#e3f5ec;
-    --line:#d6dce4; --shadow:0 1px 3px rgba(20,30,45,.08),0 6px 18px rgba(20,30,45,.06);
+    --bg:#0d1117; --panel:#161b22; --panel2:#1c2230; --ink:#e6edf3; --muted:#9aa6b2;
+    --accent:#4493f8; --accent-soft:#13315f; --core:#3fb950; --core-soft:#123a22;
+    --line:#30363d; --code:#1f2630;
   }
   *{box-sizing:border-box}
-  html{scroll-behavior:smooth}
+  html,body{height:100%; margin:0}
   body{
-    margin:0; background:var(--bg); color:var(--ink);
-    font:16px/1.55 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg); color:var(--ink); overflow:hidden;
+    font:16px/1.5 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
     -webkit-font-smoothing:antialiased;
   }
   code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
-    background:#f0f2f5; padding:.05em .35em; border-radius:4px; font-size:.92em}
+    background:var(--code); padding:.05em .35em; border-radius:5px;
+    font-size:.86em; color:#cdd9e5}
   a{color:var(--accent); text-decoration:none}
 
-  /* верхняя липкая полоса */
-  .topbar{
-    position:sticky; top:0; z-index:20; display:flex; align-items:center;
-    gap:12px; padding:9px 18px; background:rgba(27,36,48,.94); color:#fff;
-    font-size:13px; letter-spacing:.2px; backdrop-filter:blur(4px);
-  }
-  .topbar .t-title{font-weight:600}
-  .topbar .t-mode{margin-left:auto; padding:2px 10px; border-radius:20px;
-    background:var(--accent); font-size:12px; font-weight:600}
+  /* прогресс-бар */
+  .progress{position:fixed; top:0; left:0; right:0; height:4px;
+    background:rgba(255,255,255,.06); z-index:30}
+  .progress-fill{height:100%; width:0; background:var(--accent); transition:width .25s ease}
 
-  .page{max-width:980px; margin:0 auto; padding:0 20px 80px}
+  /* контейнер слайдов */
+  .deck{position:fixed; inset:0}
+  .slide{position:absolute; inset:0; display:flex; flex-direction:column;
+    padding:clamp(28px,5vh,64px) clamp(32px,6vw,96px) clamp(70px,10vh,96px);
+    opacity:0; visibility:hidden; transition:opacity .25s ease;
+    overflow:auto}
+  .slide.is-active{opacity:1; visibility:visible}
 
-  /* обложка */
-  .cover{padding:54px 0 26px; border-bottom:1px solid var(--line)}
-  .cover h1{font-size:34px; line-height:1.2; margin:0 0 14px}
-  .cover .sub{font-size:18px; color:var(--muted); margin:0 0 6px}
-  .cover .sub.s2{margin-bottom:18px}
-  .cover .lead{font-size:15px; color:var(--muted); max-width:70ch}
+  /* шапка контентного слайда */
+  .s-head{display:flex; align-items:center; gap:16px; flex-wrap:wrap;
+    padding-bottom:14px; border-bottom:1px solid var(--line); margin-bottom:clamp(14px,3vh,30px)}
+  .s-head .blk{font-size:clamp(13px,1.7vh,16px); color:var(--muted)}
+  .s-head .blk b{color:var(--ink); font-weight:600}
+  .s-head .badge{margin-left:auto; font-size:clamp(12px,1.6vh,15px); font-weight:600;
+    padding:4px 13px; border-radius:20px; background:var(--accent-soft); color:#9ec5ff;
+    font-variant-numeric:tabular-nums; white-space:nowrap}
+  .is-core .s-head{border-bottom-color:var(--core)}
+  .is-core .s-head .badge{background:var(--core-soft); color:#5fd07f}
 
-  /* оглавление-тайминг */
-  .toc{margin:26px 0 0; background:var(--card); border:1px solid var(--line);
-    border-radius:12px; box-shadow:var(--shadow); overflow:hidden}
-  .toc h2{font-size:14px; text-transform:uppercase; letter-spacing:.8px;
-    color:var(--muted); margin:0; padding:14px 18px; border-bottom:1px solid var(--line)}
-  .toc ol{margin:0; padding:6px 0; list-style:none; counter-reset:b}
-  .toc li{display:flex; align-items:baseline; gap:12px; padding:6px 18px}
-  .toc li a{flex:1; color:var(--ink)}
-  .toc li a:hover{color:var(--accent)}
-  .toc .num{width:26px; color:var(--muted); font-variant-numeric:tabular-nums; text-align:right}
-  .toc .time{color:var(--muted); font-size:13px; font-variant-numeric:tabular-nums; white-space:nowrap}
-  .toc .core-dot{display:inline-block; width:8px; height:8px; border-radius:50%;
-    background:var(--core); margin-left:6px; vertical-align:middle}
+  /* тело */
+  .s-body{flex:1; display:flex; flex-direction:column; min-height:0}
+  .s-slideno{font-size:clamp(11px,1.5vh,13px); letter-spacing:1.5px;
+    text-transform:uppercase; color:var(--muted); margin-bottom:6px}
+  .s-body h2{margin:0 0 clamp(12px,2.5vh,26px); font-size:clamp(26px,4.6vh,46px);
+    line-height:1.15; letter-spacing:-.5px}
 
-  /* разделитель блока */
-  .block{margin-top:48px; border-top:4px solid var(--accent); padding-top:18px;
-    scroll-margin-top:54px}
-  .block.is-core{border-top-color:var(--core)}
-  .block-head{display:flex; align-items:flex-start; gap:14px; flex-wrap:wrap}
-  .block-num{flex:0 0 auto; width:42px; height:42px; border-radius:50%;
-    background:var(--accent); color:#fff; font-size:19px; font-weight:700;
-    display:flex; align-items:center; justify-content:center}
-  .is-core .block-num{background:var(--core)}
-  .block-title{flex:1 1 280px; min-width:0}
-  .block-title h2{margin:0; font-size:22px; line-height:1.25}
-  .badges{display:flex; gap:8px; flex-wrap:wrap; margin-left:auto; align-items:center}
-  .badge{font-size:12px; font-weight:600; padding:4px 11px; border-radius:20px; white-space:nowrap}
-  .badge.time{background:var(--accent-soft); color:var(--accent); font-variant-numeric:tabular-nums}
-  .badge.core{background:var(--core-soft); color:var(--core)}
+  .s-grid{flex:1; display:grid; grid-template-columns:1.05fr .95fr;
+    gap:clamp(20px,4vw,52px); align-items:center; min-height:0}
+  .s-grid.no-img{grid-template-columns:1fr}
+  figure{margin:0; text-align:center; min-height:0; display:flex;
+    flex-direction:column; justify-content:center}
+  figure img{max-width:100%; max-height:58vh; object-fit:contain;
+    border:1px solid var(--line); border-radius:10px; background:#fff; padding:6px}
+  figcaption{margin-top:10px; font-size:clamp(12px,1.6vh,15px); color:var(--muted)}
 
-  /* цель и заметка спикера (только flow) */
-  .goal{margin:14px 0 0; color:var(--muted); font-style:italic; font-size:15px}
-  .goal b{font-style:normal; color:var(--ink)}
-  .note{margin:14px 0 0; background:#fbfaf4; border:1px solid #ece6cf;
-    border-left:4px solid #c9a227; border-radius:10px; padding:14px 16px}
-  .note h4{margin:0 0 8px; font-size:12px; text-transform:uppercase;
-    letter-spacing:.8px; color:#8a6d12}
-  .note p{margin:0 0 10px}
-  .note p:last-child{margin-bottom:0}
-  .note ol{margin:6px 0 10px; padding-left:22px}
-  .note ol li{margin:3px 0}
-  .note .fallback{font-size:14px; color:var(--muted)}
-  .note .fallback b{color:var(--ink)}
+  .theses{margin:0; padding:0; list-style:none; align-self:center}
+  .theses li{position:relative; padding-left:30px; margin:clamp(8px,1.8vh,18px) 0;
+    font-size:clamp(16px,2.5vh,25px); line-height:1.35}
+  .theses li::before{content:""; position:absolute; left:6px; top:.55em;
+    width:9px; height:9px; border-radius:50%; background:var(--accent)}
+  .is-core .theses li::before{background:var(--core)}
 
-  /* карточка слайда */
-  .slide{margin:18px 0 0; background:var(--card); border:1px solid var(--line);
-    border-radius:12px; box-shadow:var(--shadow); padding:20px 22px}
-  .slide-head{display:flex; align-items:baseline; gap:10px; margin-bottom:6px}
-  .slide-no{font-size:12px; font-weight:700; color:#fff; background:var(--muted);
-    padding:2px 9px; border-radius:6px; font-variant-numeric:tabular-nums}
-  .slide h3{margin:0; font-size:19px; line-height:1.3}
-  .theses{margin:8px 0 0; padding-left:0; list-style:none}
-  .theses li{position:relative; padding-left:20px; margin:7px 0; font-size:16.5px}
-  .theses li::before{content:""; position:absolute; left:4px; top:.62em;
-    width:6px; height:6px; border-radius:50%; background:var(--accent)}
-  .is-core-slide .theses li::before{background:var(--core)}
-  .show{margin-top:14px; padding-top:11px; border-top:1px dashed var(--line);
-    font-size:13.5px; color:var(--muted)}
-  .show b{color:var(--ink); font-weight:600}
-  figure{margin:16px 0 0; text-align:center}
-  figure img{max-width:100%; height:auto; border:1px solid var(--line);
-    border-radius:8px; background:#fff}
-  figure figcaption{margin-top:7px; font-size:13px; color:var(--muted)}
+  /* подвал слайда: показать + github */
+  .s-foot{margin-top:clamp(12px,2.4vh,24px); padding-top:12px;
+    border-top:1px dashed var(--line)}
+  .s-foot .show{font-size:clamp(12px,1.7vh,15px); color:var(--muted)}
+  .s-foot .show b{color:var(--ink)}
+  .s-foot .gh{margin-top:8px; display:flex; flex-wrap:wrap; gap:7px; align-items:center}
+  .s-foot .gh .lbl{font-size:clamp(12px,1.6vh,14px); color:var(--ink); font-weight:600}
+  .s-foot .gh a{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    font-size:clamp(11px,1.5vh,13px); padding:3px 10px; border:1px solid var(--line);
+    border-radius:7px; background:var(--panel2); color:#9ec5ff}
+  .s-foot .gh a:hover{border-color:var(--accent); background:var(--accent-soft)}
 
-  .end{margin-top:48px; padding-top:18px; border-top:4px solid var(--line);
-    color:var(--muted); font-size:14px}
-  .end a{margin-right:14px}
+  /* титул */
+  .cover{justify-content:center; text-align:center; align-items:center}
+  .cover .kicker{font-size:clamp(12px,1.8vh,15px); letter-spacing:3px;
+    text-transform:uppercase; color:var(--accent); margin-bottom:clamp(16px,3vh,28px)}
+  .cover h1{margin:0 0 clamp(16px,3vh,26px); font-size:clamp(30px,6.2vh,62px);
+    line-height:1.1; max-width:18ch; letter-spacing:-1px}
+  .cover .sub{margin:4px 0; font-size:clamp(15px,2.3vh,23px); color:var(--muted); max-width:46ch}
+  .cover .author{margin-top:clamp(28px,5vh,52px); font-size:clamp(17px,2.6vh,26px); font-weight:600}
+  .cover .org{font-size:clamp(13px,1.9vh,17px); color:var(--muted); margin-top:4px}
+  .cover .hint{margin-top:clamp(26px,5vh,46px); font-size:13px; color:var(--muted)}
+  .cover .hint kbd{background:var(--panel2); border:1px solid var(--line);
+    border-radius:5px; padding:1px 7px; font-family:inherit; font-size:12px}
 
-  @media (max-width:640px){
-    .page{padding:0 14px 60px}
-    .cover h1{font-size:27px}
-    .badges{margin-left:0; width:100%}
-  }
+  /* закрытие */
+  .outro{justify-content:center; text-align:center; align-items:center}
+  .outro h1{margin:0 0 clamp(18px,3.5vh,30px); font-size:clamp(28px,5.5vh,56px); letter-spacing:-1px}
+  .outro p{margin:6px 0; font-size:clamp(15px,2.3vh,22px); color:var(--muted); max-width:52ch}
+  .outro .contacts{margin-top:clamp(26px,5vh,46px); display:flex; flex-direction:column; gap:10px}
+  .outro .contacts a{font-size:clamp(16px,2.4vh,22px)}
+  .outro .contacts .c-lbl{font-size:13px; color:var(--muted); letter-spacing:1px; text-transform:uppercase}
+
+  /* навигация */
+  .nav{position:fixed; bottom:16px; left:50%; transform:translateX(-50%); z-index:30;
+    display:flex; align-items:center; gap:10px; padding:7px 10px;
+    background:rgba(22,27,34,.92); border:1px solid var(--line); border-radius:30px;
+    backdrop-filter:blur(6px)}
+  .nav-btn{appearance:none; cursor:pointer; border:1px solid var(--line);
+    background:var(--panel2); color:var(--ink); border-radius:50%; width:38px; height:38px;
+    font-size:20px; line-height:1; display:flex; align-items:center; justify-content:center}
+  .nav-btn:hover{border-color:var(--accent); color:#9ec5ff}
+  .nav-btn:disabled{opacity:.35; cursor:default}
+  .nav-btn.fs{width:auto; border-radius:20px; padding:0 14px; font-size:13px; font-weight:600}
+  .counter{min-width:62px; text-align:center; font-size:14px; color:var(--muted);
+    font-variant-numeric:tabular-nums}
+
   @media print{
-    body{background:#fff}
-    .topbar{display:none}
-    .toc,.slide,.note{box-shadow:none}
-    .block{break-before:page; border-top-width:3px}
-    .block:first-of-type{break-before:auto}
-    .slide{break-inside:avoid}
-    figure{break-inside:avoid}
-    a{color:var(--ink)}
+    body{overflow:visible}
+    .progress,.nav{display:none}
+    .deck{position:static}
+    .slide{position:relative; opacity:1!important; visibility:visible!important;
+      break-after:page; min-height:100vh; border-bottom:1px solid #ccc}
   }
 </style>
 </head>
 <body>
-<div class="topbar">
-  <span class="t-title">Доставка по контракту: два стека — один <code style="background:rgba(255,255,255,.15);color:#fff">werf converge</code></span>
-  <span class="t-mode" id="modeBadge"></span>
+<div class="progress"><div class="progress-fill" id="pfill"></div></div>
+<main class="deck" id="deck"></main>
+<div class="nav">
+  <button id="prev" class="nav-btn" aria-label="Назад" title="Назад (←)">‹</button>
+  <span class="counter" id="counter">1 / 18</span>
+  <button id="next" class="nav-btn" aria-label="Вперёд" title="Вперёд (→)">›</button>
+  <button id="fs" class="nav-btn fs" title="Во весь экран (F)">во весь экран</button>
 </div>
-<main class="page" id="app"></main>
-
 <script>
-const MODE = 'deck'; // 'flow' — суфлёр (цель + заметки); 'deck' — чистая колода
-
+const REPO = "https://github.com/nedlosster/werf_ci_demo/blob/main/";
 const META = {
   title: "Доставка по контракту: два стека — один werf converge",
   sub1: "Разработка прямо в dev-кластере, где dev неотличим от prod.",
@@ -165,7 +167,7 @@ const BLOCKS = [
         "демонстрируется способ доставки и разработки, не приложение",
         "кластеры считаем уже развёрнутыми, их разворачивание вне скопа",
         "бизнес-логика продуктов минимальна по замыслу"
-      ], show:"обзор продуктов"}
+      ], show:"обзор продуктов", gh:[{t:"README.md", p:"README.md"}]}
     ]
   },
   {
@@ -179,6 +181,7 @@ const BLOCKS = [
         "стык держит инженер: синхронизация тегов, пересборка слоёв",
         "работа повторяется в каждой команде и плохо переносится"
       ], show:"доставка в Kubernetes, схема industrial-cicd",
+        gh:[{t:"delivery-to-k8s.md", p:"docs/concepts/delivery-to-k8s.md"}],
         img:"industrial-cicd.png", cap:"Промышленный CI/CD: сборка → registry → релиз"},
       {no:4, title:"werf converge сшивает обе половины", theses:[
         "сборка и применение релиза в одной программе из одного git-состояния",
@@ -186,6 +189,7 @@ const BLOCKS = [
         "сборка по кешируемым стадиям, пересборка только затронутого",
         "giterminism по умолчанию; в демо ослаблен — см. контекстный слайд"
       ], show:"введение в werf, поток converge",
+        gh:[{t:"werf-intro.md", p:"docs/concepts/werf-intro.md"}],
         img:"converge-flow.png", cap:"Поток werf converge: build → publish → deploy"}
     ]
   },
@@ -202,6 +206,7 @@ const BLOCKS = [
         "контракт <code>.helm/def.sh</code>: <code>APPNAME</code>, <code>ENVNAME</code>, <code>CI_URL</code>, <code>CI_TAG</code>, опц. <code>NAMESPACE</code>",
         "<code>deploy()</code> читает только <code>${!CI_@}</code> и пробрасывает в helm; контур не знает продукт"
       ], show:"диаграмма архитектуры, контракт приложения",
+        gh:[{t:".helm/def.sh (app1)", p:"apps/app1-java-react/.helm/def.sh"},{t:"utils/03-werf-converge.sh", p:"kube_ci/utils/03-werf-converge.sh"}],
         img:"architecture.png", cap:"Архитектура: apps → kube_ci → кластер"}
     ]
   },
@@ -218,6 +223,7 @@ const BLOCKS = [
         "один converge на оба, без ветки «если это app1»",
         "различия живут в <code>Dockerfile</code>, <code>werf.yaml</code>, чарте"
       ], show:"обзор продуктов, таблица стеков, анатомия продукта",
+        gh:[{t:"werf.yaml (app1)", p:"apps/app1-java-react/werf.yaml"},{t:"werf.yaml (app2)", p:"apps/app2-python-angular/werf.yaml"},{t:".helm/def.sh (app2)", p:"apps/app2-python-angular/.helm/def.sh"}],
         img:"product-anatomy.png", cap:"Анатомия продукта: Dockerfile, werf.yaml, чарт"}
     ]
   },
@@ -232,14 +238,16 @@ const BLOCKS = [
         "dev собран из тех же кубовых объектов, что prod — расхождение сред почти исчезает",
         "тяжёлое (maven, node, pip, базы) на ноде; редактор лёгкий, ноутбук не нагружен",
         "один артефакт доставки: dev и prod различаются только окружением в <code>.helm/def.sh</code>"
-      ], show:"разработка внутри кластера, <code>kubectl -n app1-java-react-dev get pods</code>"},
+      ], show:"разработка внутри кластера, <code>kubectl -n app1-java-react-dev get pods</code>",
+        gh:[{t:"dev-in-cluster.md", p:"docs/delivery/dev-in-cluster.md"}]},
       {no:8, title:"dev в кластере vs docker-compose", theses:[
         "docker-compose моделирует только контейнеры и docker-сеть — Kubernetes-слоя нет",
         "в кластере отлаживается то, чего compose не показывает:",
         "Ingress-маршрутизация (<code>/api</code>, <code>/pgadmin</code>, host nip.io, rewrite), service discovery по DNS и <code>targetPort</code>",
         "readiness/liveness-пробы, rollout, <code>updateStrategy: OnDelete</code> у Postgres",
         "монтирование Secret и ConfigMap, init-контейнеры, сам <code>werf converge</code> с хуками"
-      ], show:"разработка внутри кластера, раздел «Зачем dev в кластере, а не docker-compose»"}
+      ], show:"разработка внутри кластера, раздел «Зачем dev в кластере, а не docker-compose»",
+        gh:[{t:"dev-in-cluster-vs-tools.md", p:"docs/delivery/dev-in-cluster-vs-tools.md"}]}
     ]
   },
   {
@@ -263,13 +271,15 @@ const BLOCKS = [
         "синхронизация только через git: ни <code>scp</code>, ни <code>rsync</code> между машинами",
         "dev-сервер фронта app1 — <code>dev-start.sh</code>: <code>npm install</code> + <code>vite --host 0.0.0.0 --port 8080</code>"
       ], show:"диаграмма цикла работы в dev-поде",
+        gh:[{t:"frontend/dev-start.sh", p:"apps/app1-java-react/frontend/dev-start.sh"}],
         img:"dev-workflow-cycle.png", cap:"Цикл работы в dev-поде: правка → HMR → git push → converge"},
       {no:10, title:"Демонстрация на app1", theses:[
         "правка React-компонента → Vite HMR мгновенно в браузере через ingress (nip.io)",
         "сервер виден снаружи: слушает <code>targetPort</code> dev-Service, <code>allowedHosts</code> <code>.nip.io</code> в <code>vite.config.ts</code>",
         "проверено в dev → <code>git push</code> с рабочей машины → converge в dev с новой версией",
         "сборку прогнать заранее/параллельно; запасной вариант — заранее снятый результат"
-      ], show:"живая правка фронта app1 на <code>app1-java-react-dev-&lt;NODE_IP&gt;.nip.io</code>, вывод converge с новой версией"}
+      ], show:"живая правка фронта app1 на <code>app1-java-react-dev-&lt;NODE_IP&gt;.nip.io</code>, вывод converge с новой версией",
+        gh:[{t:"vite.config.ts", p:"apps/app1-java-react/frontend/vite.config.ts"},{t:"00-build-deploy.sh", p:"kube_ci/dev/00-build-deploy.sh"}]}
     ]
   },
   {
@@ -282,7 +292,8 @@ const BLOCKS = [
         "симлинки <code>~/.m2</code>, <code>~/.npm</code>, <code>~/.cache</code>, <code>~/.local</code> ведут на том <code>homeapp</code>",
         "первый клон и <code>npm install</code> — разовая плата; дальше из кеша без сети",
         "тома живут дольше пода: рестарт и перезагрузка ВМ их не трогают"
-      ], show:"кеши и persistent-volume'ы dev-сред, таблица двух PVC"}
+      ], show:"кеши и persistent-volume'ы dev-сред, таблица двух PVC",
+        gh:[{t:"dev-caches-and-volumes.md", p:"docs/delivery/dev-caches-and-volumes.md"}]}
     ]
   },
   {
@@ -297,13 +308,15 @@ const BLOCKS = [
         "снос: <code>./01-dismiss.sh &lt;product&gt;|--all</code>, без аргумента отказывается",
         "очистка: <code>./02-purge-stages.sh</code>, сбрасывает кеш стадий, релизы не трогает"
       ], show:"топология окружения (deploy-topology), живой прогон публикации в dev",
+        gh:[{t:"pull_products.sh", p:"kube_ci/dev/pull_products.sh"},{t:"00-build-deploy.sh", p:"kube_ci/dev/00-build-deploy.sh"},{t:"01-dismiss.sh", p:"kube_ci/dev/01-dismiss.sh"},{t:"02-purge-stages.sh", p:"kube_ci/dev/02-purge-stages.sh"},{t:"03-rollback.sh", p:"kube_ci/dev/03-rollback.sh"}],
         img:"deploy-topology.png", cap:"Топология окружений dev/prod, неймспейсы"},
       {no:13, title:"dev и prod одним контуром", theses:[
         "<code>kube_ci/dev/</code> и <code>kube_ci/prod/</code> — самодостаточные каталоги, одинаковый набор файлов",
         "различие — <code>k8s_defs</code> и env-функция продукта из <code>productlist</code>",
         "релиз в неймспейс <code>&lt;NAMESPACE&gt;-&lt;ENVNAME&gt;</code>, dev и prod не конфликтуют",
         "временно один preprod-кластер; разделение — смена <code>KUBECONTEXT</code> и <code>REGISTRY</code>"
-      ], show:"один контур, два окружения, вывод <code>kubectl get ns</code>"}
+      ], show:"один контур, два окружения, вывод <code>kubectl get ns</code>",
+        gh:[{t:"productlist_official", p:"kube_ci/dev/productlist_official"},{t:"k8s_defs", p:"kube_ci/dev/k8s_defs"}]}
     ]
   },
   {
@@ -317,6 +330,7 @@ const BLOCKS = [
         "четыре метрики DORA с артефактов контура; кода сбора в репозитории нет",
         "секреты в <code>.helm/secrets-&lt;env&gt;.yaml</code> шифрует werf по <code>WERF_SECRET_KEY</code>; версия <code>VERSION</code> → <code>CI_TAG</code>"
       ], show:"компромиссы и безопасность схемы одним кадром-перечнем",
+        gh:[{t:"set-version.sh", p:"apps/app1-java-react/scripts/set-version.sh"},{t:"secret-values.yaml.example", p:"apps/app1-java-react/.helm/secret-values.yaml.example"}],
         img:"dora-flow.png", cap:"Метрики DORA: статусы job-ов, временные метки"}
     ]
   },
@@ -332,6 +346,7 @@ const BLOCKS = [
         "послабления демо понятны и обратимы: в проде меняется конфигурация, не логика",
         "всё это — дистилляция практики 2020–2025"
       ], show:"диаграмма архитектуры финальным кадром",
+        gh:[{t:"README.md", p:"README.md"},{t:"docs/README.md", p:"docs/README.md"}],
         img:"architecture.png", cap:"Архитектура: apps → kube_ci → кластер (финальный кадр)"}
     ]
   },
@@ -344,99 +359,124 @@ const BLOCKS = [
         "открыть обсуждение",
         "backup-слайды держать наготове: dev-in-cluster vs docker-compose, что отлаживается в кластере, кеши/волумы при рестарте, <code>git pull</code> по ключу в поде, цена dev-подов",
         "плюс острые места схемы: insecure-registry, loose-giterminism, общий кластер, nip.io, ключ werf"
-      ], show:"банк вопросов как набор скрытых backup-слайдов"}
+      ], show:"банк вопросов как набор скрытых backup-слайдов",
+        gh:[{t:"qa-bank.md", p:"docs/demo/qa-bank.md"}]}
     ]
   }
 ];
 
-const RELATED = [
-  ["План доклада на 60 минут","talk-plan-60min.md"],
-  ["Слайды доклада","slides.md"],
-  ["Банк вопросов и ответов","qa-bank.md"],
-  ["Индекс документации","../README.md"]
-];
 
-function esc(){} // тезисы уже содержат безопасную разметку из массива
-
-function render(){
-  document.getElementById('modeBadge').textContent =
-    MODE === 'flow' ? 'версия: суфлёр' : 'версия: колода';
-  document.title = MODE === 'flow'
-    ? 'Лента доклада — суфлёр' : 'Лента доклада — колода';
-
-  const app = document.getElementById('app');
-  const parts = [];
-
-  // обложка
-  parts.push(`<header class="cover">
-    <h1>${META.title}</h1>
-    <p class="sub">${META.sub1}</p>
-    <p class="sub s2">${META.sub2}</p>
-    <p class="lead">${META.lead}</p>
-  </header>`);
-
-  // оглавление-тайминг
-  parts.push(`<nav class="toc"><h2>Тайминг · 60 минут</h2><ol>` +
-    BLOCKS.map(b => `<li>
-        <span class="num">${b.n}.</span>
-        <a href="#b${b.n}">${b.title}${b.core ? '<span class="core-dot" title="ядро"></span>' : ''}</a>
-        <span class="time">${b.dur} · ${b.cum}</span>
-      </li>`).join('') +
-    `</ol></nav>`);
-
-  // блоки
-  for(const b of BLOCKS){
-    const isCore = !!b.core;
-    let s = `<section class="block${isCore?' is-core':''}" id="b${b.n}">
-      <div class="block-head">
-        <div class="block-num">${b.n}</div>
-        <div class="block-title"><h2>${b.title}</h2></div>
-        <div class="badges">
-          ${isCore?`<span class="badge core">${b.core}</span>`:''}
-          <span class="badge time">${b.dur} · ${b.cum}</span>
-        </div>
-      </div>`;
-
-    if(MODE === 'flow'){
-      s += `<p class="goal"><b>Цель:</b> ${b.goal}</p>`;
-      let noteHtml = `<div class="note"><h4>Заметка спикера</h4>` +
-        b.note.map(p=>`<p>${p}</p>`).join('');
-      if(b.demo){
-        noteHtml += `<p><b>Мини-сценарий демонстрации</b> (dev-сервер поднят заранее, браузер открыт на хосте ingress):</p>`;
-        noteHtml += `<ol>` + b.demo.map(d=>`<li>${d}</li>`).join('') + `</ol>`;
-      }
-      if(b.fallback){
-        noteHtml += `<p class="fallback"><b>Запасной вариант.</b> ${b.fallback}</p>`;
-      }
-      noteHtml += `</div>`;
-      s += noteHtml;
-    }
-
-    for(const sl of b.slides){
-      s += `<article class="slide${isCore?' is-core-slide':''}">
-        <div class="slide-head">
-          <span class="slide-no">Слайд ${sl.no}</span>
-          <h3>${sl.title}</h3>
-        </div>
-        <ul class="theses">${sl.theses.map(t=>`<li>${t}</li>`).join('')}</ul>
-        <div class="show"><b>Показать:</b> ${sl.show}.</div>
-        ${sl.img?`<figure><img src="../pics/${sl.img}" alt="${sl.cap||''}" loading="lazy"><figcaption>${sl.cap||''}</figcaption></figure>`:''}
-      </article>`;
-    }
-
-    s += `</section>`;
-    parts.push(s);
-  }
-
-  // подвал
-  parts.push(`<footer class="end">
-    <div>Связанные материалы:</div>
-    <div style="margin-top:8px">${RELATED.map(r=>`<a href="${r[1]}">${r[0]}</a>`).join('')}</div>
-  </footer>`);
-
-  app.innerHTML = parts.join('\n');
+// ---- сборка плоского списка слайдов: титул + контент из BLOCKS + закрытие ----
+const SLIDES = [{type:'cover'}];
+for(const b of BLOCKS){
+  for(const sl of b.slides){ SLIDES.push({type:'content', b, sl}); }
 }
-render();
+SLIDES.push({type:'outro'});
+
+function slideHTML(s){
+  if(s.type === 'cover'){
+    return `<section class="slide cover">
+      <div class="kicker">Демонстрация · ГНИВЦ</div>
+      <h1>${META.title}</h1>
+      <p class="sub">${META.sub1}</p>
+      <p class="sub">${META.sub2}</p>
+      <div class="author">Олейник Денис Сергеевич</div>
+      <div class="org">ГНИВЦ</div>
+      <div class="hint">Навигация: <kbd>←</kbd> <kbd>→</kbd> · <kbd>Space</kbd> · <kbd>F</kbd> — во весь экран</div>
+    </section>`;
+  }
+  if(s.type === 'outro'){
+    return `<section class="slide outro">
+      <h1>Спасибо за внимание</h1>
+      <p>Доставка по контракту, разработка прямо в кластере и операции на живых командах — дистилляция практики Kubernetes 2020–2025.</p>
+      <p>Вопросы и обсуждение — сейчас или по контактам ниже.</p>
+      <div class="contacts">
+        <div><span class="c-lbl">Почта</span><br><a href="mailto:oleynikds@gnivc.ru">oleynikds@gnivc.ru</a></div>
+        <div><span class="c-lbl">GitHub</span><br><a href="https://github.com/nedlosster" target="_blank" rel="noopener">github.com/nedlosster</a></div>
+        <div><span class="c-lbl">Репозиторий демо</span><br><a href="https://github.com/nedlosster/werf_ci_demo" target="_blank" rel="noopener">github.com/nedlosster/werf_ci_demo</a></div>
+      </div>
+    </section>`;
+  }
+  const b = s.b, sl = s.sl, core = !!b.core;
+  const theses = `<ul class="theses">${sl.theses.map(t=>`<li>${t}</li>`).join('')}</ul>`;
+  const body = sl.img
+    ? `<div class="s-grid">${theses}<figure><img src="../pics/${sl.img}" alt="${sl.cap||''}"><figcaption>${sl.cap||''}</figcaption></figure></div>`
+    : `<div class="s-grid no-img">${theses}</div>`;
+  const gh = sl.gh
+    ? `<div class="gh"><span class="lbl">GitHub:</span>${sl.gh.map(g=>`<a href="${REPO}${g.p}" target="_blank" rel="noopener">${g.t}</a>`).join('')}</div>`
+    : '';
+  return `<section class="slide content${core?' is-core':''}">
+    <div class="s-head">
+      <span class="blk">Блок ${b.n} · <b>${b.title}</b></span>
+      <span class="badge">${b.dur} · ${b.cum}${core?' · '+b.core:''}</span>
+    </div>
+    <div class="s-body">
+      <div class="s-slideno">Слайд ${sl.no}</div>
+      <h2>${sl.title}</h2>
+      ${body}
+      <div class="s-foot">
+        <div class="show"><b>Показать:</b> ${sl.show}.</div>
+        ${gh}
+      </div>
+    </div>
+  </section>`;
+}
+
+// ---- рендер и навигация ----
+const deck = document.getElementById('deck');
+deck.innerHTML = SLIDES.map(slideHTML).join('\n');
+const nodes = Array.from(deck.querySelectorAll('.slide'));
+const total = nodes.length;
+const counter = document.getElementById('counter');
+const pfill = document.getElementById('pfill');
+const prevBtn = document.getElementById('prev');
+const nextBtn = document.getElementById('next');
+const fsBtn = document.getElementById('fs');
+let idx = 0;
+
+function clamp(i){ return Math.max(0, Math.min(total-1, i)); }
+function show(i, push){
+  idx = clamp(i);
+  nodes.forEach((n,k)=>n.classList.toggle('is-active', k===idx));
+  counter.textContent = (idx+1) + ' / ' + total;
+  pfill.style.width = (total>1 ? (idx/(total-1))*100 : 100) + '%';
+  prevBtn.disabled = idx===0;
+  nextBtn.disabled = idx===total-1;
+  nodes[idx].scrollTop = 0;
+  if(push !== false){ history.replaceState(null, '', '#' + (idx+1)); }
+}
+function next(){ show(idx+1); }
+function prev(){ show(idx-1); }
+
+nextBtn.addEventListener('click', next);
+prevBtn.addEventListener('click', prev);
+fsBtn.addEventListener('click', ()=>{
+  if(document.fullscreenElement){ document.exitFullscreen(); }
+  else { document.documentElement.requestFullscreen?.(); }
+});
+document.addEventListener('keydown', e=>{
+  if(['ArrowRight','PageDown',' ','Spacebar','Enter'].includes(e.key)){ e.preventDefault(); next(); }
+  else if(['ArrowLeft','PageUp'].includes(e.key)){ e.preventDefault(); prev(); }
+  else if(e.key==='Home'){ e.preventDefault(); show(0); }
+  else if(e.key==='End'){ e.preventDefault(); show(total-1); }
+  else if(e.key==='f'||e.key==='F'){ fsBtn.click(); }
+});
+// свайпы для тачскрина
+let tx=null;
+deck.addEventListener('touchstart', e=>{ tx = e.changedTouches[0].clientX; }, {passive:true});
+deck.addEventListener('touchend', e=>{
+  if(tx===null) return;
+  const dx = e.changedTouches[0].clientX - tx;
+  if(Math.abs(dx) > 50){ dx < 0 ? next() : prev(); }
+  tx = null;
+}, {passive:true});
+
+const fromHash = parseInt((location.hash||'').replace('#',''), 10);
+show(Number.isFinite(fromHash) ? fromHash-1 : 0, false);
+window.addEventListener('hashchange', ()=>{
+  const h = parseInt((location.hash||'').replace('#',''),10);
+  if(Number.isFinite(h)) show(h-1, false);
+});
 </script>
 </body>
 </html>

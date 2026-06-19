@@ -105,6 +105,12 @@
   .show{margin-top:14px; padding-top:11px; border-top:1px dashed var(--line);
     font-size:13.5px; color:var(--muted)}
   .show b{color:var(--ink); font-weight:600}
+  .gh{margin-top:7px; font-size:13px; color:var(--muted)}
+  .gh b{color:var(--ink); font-weight:600}
+  .gh a{display:inline-block; margin:2px 0; padding:1px 7px; border:1px solid var(--line);
+    border-radius:6px; font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    font-size:12px; background:#f7f9fc}
+  .gh a:hover{border-color:var(--accent); background:var(--accent-soft)}
   figure{margin:16px 0 0; text-align:center}
   figure img{max-width:100%; height:auto; border:1px solid var(--line);
     border-radius:8px; background:#fff}
@@ -140,6 +146,7 @@
 
 <script>
 const MODE = 'flow'; // 'flow' — суфлёр (цель + заметки); 'deck' — чистая колода
+const REPO = "https://github.com/nedlosster/werf_ci_demo/blob/main/";
 
 const META = {
   title: "Доставка по контракту: два стека — один werf converge",
@@ -165,7 +172,7 @@ const BLOCKS = [
         "демонстрируется способ доставки и разработки, не приложение",
         "кластеры считаем уже развёрнутыми, их разворачивание вне скопа",
         "бизнес-логика продуктов минимальна по замыслу"
-      ], show:"обзор продуктов"}
+      ], show:"обзор продуктов", gh:[{t:"README.md", p:"README.md"}]}
     ]
   },
   {
@@ -179,6 +186,7 @@ const BLOCKS = [
         "стык держит инженер: синхронизация тегов, пересборка слоёв",
         "работа повторяется в каждой команде и плохо переносится"
       ], show:"доставка в Kubernetes, схема industrial-cicd",
+        gh:[{t:"delivery-to-k8s.md", p:"docs/concepts/delivery-to-k8s.md"}],
         img:"industrial-cicd.png", cap:"Промышленный CI/CD: сборка → registry → релиз"},
       {no:4, title:"werf converge сшивает обе половины", theses:[
         "сборка и применение релиза в одной программе из одного git-состояния",
@@ -186,6 +194,7 @@ const BLOCKS = [
         "сборка по кешируемым стадиям, пересборка только затронутого",
         "giterminism по умолчанию; в демо ослаблен — см. контекстный слайд"
       ], show:"введение в werf, поток converge",
+        gh:[{t:"werf-intro.md", p:"docs/concepts/werf-intro.md"}],
         img:"converge-flow.png", cap:"Поток werf converge: build → publish → deploy"}
     ]
   },
@@ -202,6 +211,7 @@ const BLOCKS = [
         "контракт <code>.helm/def.sh</code>: <code>APPNAME</code>, <code>ENVNAME</code>, <code>CI_URL</code>, <code>CI_TAG</code>, опц. <code>NAMESPACE</code>",
         "<code>deploy()</code> читает только <code>${!CI_@}</code> и пробрасывает в helm; контур не знает продукт"
       ], show:"диаграмма архитектуры, контракт приложения",
+        gh:[{t:".helm/def.sh (app1)", p:"apps/app1-java-react/.helm/def.sh"},{t:"utils/03-werf-converge.sh", p:"kube_ci/utils/03-werf-converge.sh"}],
         img:"architecture.png", cap:"Архитектура: apps → kube_ci → кластер"}
     ]
   },
@@ -218,6 +228,7 @@ const BLOCKS = [
         "один converge на оба, без ветки «если это app1»",
         "различия живут в <code>Dockerfile</code>, <code>werf.yaml</code>, чарте"
       ], show:"обзор продуктов, таблица стеков, анатомия продукта",
+        gh:[{t:"werf.yaml (app1)", p:"apps/app1-java-react/werf.yaml"},{t:"werf.yaml (app2)", p:"apps/app2-python-angular/werf.yaml"},{t:".helm/def.sh (app2)", p:"apps/app2-python-angular/.helm/def.sh"}],
         img:"product-anatomy.png", cap:"Анатомия продукта: Dockerfile, werf.yaml, чарт"}
     ]
   },
@@ -232,14 +243,16 @@ const BLOCKS = [
         "dev собран из тех же кубовых объектов, что prod — расхождение сред почти исчезает",
         "тяжёлое (maven, node, pip, базы) на ноде; редактор лёгкий, ноутбук не нагружен",
         "один артефакт доставки: dev и prod различаются только окружением в <code>.helm/def.sh</code>"
-      ], show:"разработка внутри кластера, <code>kubectl -n app1-java-react-dev get pods</code>"},
+      ], show:"разработка внутри кластера, <code>kubectl -n app1-java-react-dev get pods</code>",
+        gh:[{t:"dev-in-cluster.md", p:"docs/delivery/dev-in-cluster.md"}]},
       {no:8, title:"dev в кластере vs docker-compose", theses:[
         "docker-compose моделирует только контейнеры и docker-сеть — Kubernetes-слоя нет",
         "в кластере отлаживается то, чего compose не показывает:",
         "Ingress-маршрутизация (<code>/api</code>, <code>/pgadmin</code>, host nip.io, rewrite), service discovery по DNS и <code>targetPort</code>",
         "readiness/liveness-пробы, rollout, <code>updateStrategy: OnDelete</code> у Postgres",
         "монтирование Secret и ConfigMap, init-контейнеры, сам <code>werf converge</code> с хуками"
-      ], show:"разработка внутри кластера, раздел «Зачем dev в кластере, а не docker-compose»"}
+      ], show:"разработка внутри кластера, раздел «Зачем dev в кластере, а не docker-compose»",
+        gh:[{t:"dev-in-cluster-vs-tools.md", p:"docs/delivery/dev-in-cluster-vs-tools.md"}]}
     ]
   },
   {
@@ -263,13 +276,15 @@ const BLOCKS = [
         "синхронизация только через git: ни <code>scp</code>, ни <code>rsync</code> между машинами",
         "dev-сервер фронта app1 — <code>dev-start.sh</code>: <code>npm install</code> + <code>vite --host 0.0.0.0 --port 8080</code>"
       ], show:"диаграмма цикла работы в dev-поде",
+        gh:[{t:"frontend/dev-start.sh", p:"apps/app1-java-react/frontend/dev-start.sh"}],
         img:"dev-workflow-cycle.png", cap:"Цикл работы в dev-поде: правка → HMR → git push → converge"},
       {no:10, title:"Демонстрация на app1", theses:[
         "правка React-компонента → Vite HMR мгновенно в браузере через ingress (nip.io)",
         "сервер виден снаружи: слушает <code>targetPort</code> dev-Service, <code>allowedHosts</code> <code>.nip.io</code> в <code>vite.config.ts</code>",
         "проверено в dev → <code>git push</code> с рабочей машины → converge в dev с новой версией",
         "сборку прогнать заранее/параллельно; запасной вариант — заранее снятый результат"
-      ], show:"живая правка фронта app1 на <code>app1-java-react-dev-&lt;NODE_IP&gt;.nip.io</code>, вывод converge с новой версией"}
+      ], show:"живая правка фронта app1 на <code>app1-java-react-dev-&lt;NODE_IP&gt;.nip.io</code>, вывод converge с новой версией",
+        gh:[{t:"vite.config.ts", p:"apps/app1-java-react/frontend/vite.config.ts"},{t:"00-build-deploy.sh", p:"kube_ci/dev/00-build-deploy.sh"}]}
     ]
   },
   {
@@ -282,7 +297,8 @@ const BLOCKS = [
         "симлинки <code>~/.m2</code>, <code>~/.npm</code>, <code>~/.cache</code>, <code>~/.local</code> ведут на том <code>homeapp</code>",
         "первый клон и <code>npm install</code> — разовая плата; дальше из кеша без сети",
         "тома живут дольше пода: рестарт и перезагрузка ВМ их не трогают"
-      ], show:"кеши и persistent-volume'ы dev-сред, таблица двух PVC"}
+      ], show:"кеши и persistent-volume'ы dev-сред, таблица двух PVC",
+        gh:[{t:"dev-caches-and-volumes.md", p:"docs/delivery/dev-caches-and-volumes.md"}]}
     ]
   },
   {
@@ -297,13 +313,15 @@ const BLOCKS = [
         "снос: <code>./01-dismiss.sh &lt;product&gt;|--all</code>, без аргумента отказывается",
         "очистка: <code>./02-purge-stages.sh</code>, сбрасывает кеш стадий, релизы не трогает"
       ], show:"топология окружения (deploy-topology), живой прогон публикации в dev",
+        gh:[{t:"pull_products.sh", p:"kube_ci/dev/pull_products.sh"},{t:"00-build-deploy.sh", p:"kube_ci/dev/00-build-deploy.sh"},{t:"01-dismiss.sh", p:"kube_ci/dev/01-dismiss.sh"},{t:"02-purge-stages.sh", p:"kube_ci/dev/02-purge-stages.sh"},{t:"03-rollback.sh", p:"kube_ci/dev/03-rollback.sh"}],
         img:"deploy-topology.png", cap:"Топология окружений dev/prod, неймспейсы"},
       {no:13, title:"dev и prod одним контуром", theses:[
         "<code>kube_ci/dev/</code> и <code>kube_ci/prod/</code> — самодостаточные каталоги, одинаковый набор файлов",
         "различие — <code>k8s_defs</code> и env-функция продукта из <code>productlist</code>",
         "релиз в неймспейс <code>&lt;NAMESPACE&gt;-&lt;ENVNAME&gt;</code>, dev и prod не конфликтуют",
         "временно один preprod-кластер; разделение — смена <code>KUBECONTEXT</code> и <code>REGISTRY</code>"
-      ], show:"один контур, два окружения, вывод <code>kubectl get ns</code>"}
+      ], show:"один контур, два окружения, вывод <code>kubectl get ns</code>",
+        gh:[{t:"productlist_official", p:"kube_ci/dev/productlist_official"},{t:"k8s_defs", p:"kube_ci/dev/k8s_defs"}]}
     ]
   },
   {
@@ -317,6 +335,7 @@ const BLOCKS = [
         "четыре метрики DORA с артефактов контура; кода сбора в репозитории нет",
         "секреты в <code>.helm/secrets-&lt;env&gt;.yaml</code> шифрует werf по <code>WERF_SECRET_KEY</code>; версия <code>VERSION</code> → <code>CI_TAG</code>"
       ], show:"компромиссы и безопасность схемы одним кадром-перечнем",
+        gh:[{t:"set-version.sh", p:"apps/app1-java-react/scripts/set-version.sh"},{t:"secret-values.yaml.example", p:"apps/app1-java-react/.helm/secret-values.yaml.example"}],
         img:"dora-flow.png", cap:"Метрики DORA: статусы job-ов, временные метки"}
     ]
   },
@@ -332,6 +351,7 @@ const BLOCKS = [
         "послабления демо понятны и обратимы: в проде меняется конфигурация, не логика",
         "всё это — дистилляция практики 2020–2025"
       ], show:"диаграмма архитектуры финальным кадром",
+        gh:[{t:"README.md", p:"README.md"},{t:"docs/README.md", p:"docs/README.md"}],
         img:"architecture.png", cap:"Архитектура: apps → kube_ci → кластер (финальный кадр)"}
     ]
   },
@@ -344,7 +364,8 @@ const BLOCKS = [
         "открыть обсуждение",
         "backup-слайды держать наготове: dev-in-cluster vs docker-compose, что отлаживается в кластере, кеши/волумы при рестарте, <code>git pull</code> по ключу в поде, цена dev-подов",
         "плюс острые места схемы: insecure-registry, loose-giterminism, общий кластер, nip.io, ключ werf"
-      ], show:"банк вопросов как набор скрытых backup-слайдов"}
+      ], show:"банк вопросов как набор скрытых backup-слайдов",
+        gh:[{t:"qa-bank.md", p:"docs/demo/qa-bank.md"}]}
     ]
   }
 ];
@@ -420,6 +441,7 @@ function render(){
         </div>
         <ul class="theses">${sl.theses.map(t=>`<li>${t}</li>`).join('')}</ul>
         <div class="show"><b>Показать:</b> ${sl.show}.</div>
+        ${sl.gh?`<div class="gh"><b>Открыть на GitHub:</b> ${sl.gh.map(g=>`<a href="${REPO}${g.p}" target="_blank" rel="noopener">${g.t}</a>`).join(' ')}</div>`:''}
         ${sl.img?`<figure><img src="../pics/${sl.img}" alt="${sl.cap||''}" loading="lazy"><figcaption>${sl.cap||''}</figcaption></figure>`:''}
       </article>`;
     }
