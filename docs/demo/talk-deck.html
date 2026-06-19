@@ -90,6 +90,14 @@
     border:1px solid var(--line); border-radius:10px; background:#fff; padding:6px}
   figcaption{margin-top:10px; font-size:clamp(12px,1.6vh,15px); color:var(--muted)}
 
+  /* левая колонка: тезисы сверху, диаграмма под ними */
+  .left-col{display:flex; flex-direction:column; min-height:0; overflow:auto; gap:clamp(10px,2vh,20px)}
+  .left-col .theses{align-self:stretch}
+  .slide-fig{margin:0; text-align:center; flex:0 0 auto}
+  .slide-fig img{max-width:100%; max-height:30vh; object-fit:contain;
+    border:1px solid var(--line); border-radius:8px; background:#fff; padding:5px}
+  .slide-fig figcaption{margin-top:7px; font-size:clamp(11px,1.5vh,14px); color:var(--muted)}
+
   .theses{margin:0; padding:0; list-style:none; align-self:center}
   .theses li{position:relative; padding-left:30px; margin:clamp(8px,1.8vh,18px) 0;
     font-size:clamp(16px,2.5vh,25px); line-height:1.35}
@@ -182,7 +190,7 @@ const META = {
   title: "Доставка по контракту: два стека — один werf converge",
   sub1: "Разработка прямо в dev-кластере, где dev неотличим от prod.",
   sub2: "Дистилят практики Kubernetes 2020–2025.",
-  lead: "Лента слайдов доклада на 60 минут: одиннадцать блоков с таймингом, тезисами и диаграммами. Прокручивается сверху вниз — по ней ведётся рассказ. Границы блоков и слайдов отчёркнуты; ядро часа выделено зелёным."
+  lead: "Лента слайдов доклада (~64 минуты): одиннадцать блоков с таймингом, тезисами и диаграммами. Прокручивается сверху вниз — по ней ведётся рассказ. Границы блоков и слайдов отчёркнуты; ядро часа выделено зелёным."
 };
 
 const BLOCKS = [
@@ -355,26 +363,46 @@ const BLOCKS = [
     ]
   },
   {
-    n:9, title:"Контекст: компромиссы, CI, DORA, секреты, версии", dur:"2 мин", cum:"48:00–50:00",
-    goal:"Честно назвать послабления демо и обозначить, куда схема растёт, без углубления. Перечисление с отсылками к профильным статьям.",
-    note:["Контекст одним кадром, без углубления. Послабления демо обратимы: insecure-registry (HTTP / skip-TLS) ради in-cluster registry на nip.io, <code>--loose-giterminism</code> (сборка из рабочего дерева), общий preprod-кластер для dev и prod, хосты на nip.io вместо реального DNS и TLS, ключ <code>WERF_SECRET_KEY</code> на машине сборки, dev-под с примонтированным ssh-ключом — при переносе в прод меняется конфигурация окружения, не логика доставки. Те же скрипты оборачиваются в пайплайн внешнего CI: публикация — <code>deploy-dev</code>/<code>deploy-prod</code>, откат — <code>rollback</code>, очистка — <code>cleanup</code>; типовой поток — автодеплой в dev, ручной промоут в prod. Четыре метрики DORA снимаются с артефактов контура (статусы и метки времени job-ов, git-история с <code>VERSION</code>, факты запуска скриптов); кода сбора в репозитории нет, описана концепция. Секреты: пароли в <code>.helm/secrets-&lt;env&gt;.yaml</code> шифрует werf по <code>WERF_SECRET_KEY</code>; версия едина на продукт — <code>VERSION</code> раскатывается <code>set-version.sh</code> и отдаётся как <code>CI_TAG</code>."],
+    n:9, title:"Контекст: компромиссы, CI, DORA, секреты, версии", dur:"6 мин", cum:"48:00–54:00",
+    goal:"Назвать послабления демо, показать выход во внешний CI и схему хранения секретов; три слайда — компромиссы/DORA/версии, интеграция с CI, секреты.",
+    note:["Контекст: послабления демо обратимы — insecure-registry (HTTP / skip-TLS) ради in-cluster registry на nip.io, <code>--loose-giterminism</code> (сборка из рабочего дерева), общий preprod-кластер для dev и prod, хосты на nip.io вместо реального DNS и TLS, ключ <code>WERF_SECRET_KEY</code> на машине сборки, dev-под с примонтированным ssh-ключом — при переносе в прод меняется конфигурация окружения, не логика доставки. Четыре метрики DORA снимаются с артефактов контура (статусы и метки времени job-ов, git-история с <code>VERSION</code>, факты запуска скриптов); кода сбора в репозитории нет, описана концепция. Версия едина на продукт — <code>VERSION</code> раскатывается <code>set-version.sh</code> и отдаётся как <code>CI_TAG</code>.",
+      "Интеграция с внешним CI: те же скрипты оборачиваются в пайплайн без своей логики — публикация <code>deploy-dev</code>/<code>deploy-prod</code>, откат <code>rollback</code>, снос <code>dismiss</code>, очистка <code>cleanup</code>. GitLab CI и Jenkins описывают один и тот же поток: тонкая обёртка, поведение в CI и локально совпадает. Типовой поток — автодеплой в dev на main, промоут в prod вручную (<code>when: manual</code> в GitLab, <code>input</code> в Jenkins). Раннер/агент несёт тот же набор: docker, werf через trdl, kubectl, helm и доступ к кластеру; переменные <code>KUBECONFIG</code>, <code>KUBECONTEXT</code>, <code>K8S_NODE_IP</code>, <code>WERF_SECRET_KEY</code> хранятся как masked/protected, версия идёт через <code>CI_TAG</code>.",
+      "Хранение секретов: пароли (БД, pgAdmin) лежат зашифрованными в <code>.helm/secrets-&lt;env&gt;.yaml</code> и коммитятся; plaintext-копия <code>values.yaml</code> — в <code>.gitignore</code>, структуру показывает <code>secret-values.yaml.example</code>. Ключ <code>WERF_SECRET_KEY</code> симметричный, werf ищет его по приоритету env → <code>.werf_secret_key</code> → <code>~/.werf/</code> и в репозиторий не коммитится ни в каком виде. Цикл: скопировать шаблон, отредактировать plaintext, зашифровать <code>encrypt.sh &lt;env&gt;</code> в <code>secrets-&lt;env&gt;.yaml</code>; при выкатке <code>deploy()</code> добавляет <code>--secret-values</code>, werf расшифровывает в converge и подставляет в чарт как <code>.Values.secrets.*</code>. Риск сосредоточен в ключе и в отсутствии ротации — смягчение: хранить ключ как masked/protected-переменную CI и регулярно ротировать."],
     slides:[
-      {no:14, title:"Контекст: компромиссы, CI, DORA, секреты, версии", theses:[
+      {no:14, title:"Контекст: компромиссы, DORA, версии", theses:[
         "послабления обратимы: insecure-registry, <code>--loose-giterminism</code>, общий кластер dev/prod, nip.io, ключ werf, dev-SSH-под",
-        "те же скрипты в пайплайне CI: <code>deploy-dev</code>/<code>deploy-prod</code>, <code>rollback</code>, <code>cleanup</code>; автодеплой dev, ручной промоут prod",
-        "четыре метрики DORA с артефактов контура; кода сбора в репозитории нет",
-        "секреты в <code>.helm/secrets-&lt;env&gt;.yaml</code> шифрует werf по <code>WERF_SECRET_KEY</code>; версия <code>VERSION</code> → <code>CI_TAG</code>"
-      ], show:"компромиссы и безопасность схемы одним кадром-перечнем",
-        gh:[{t:"set-version.sh", p:"apps/app1-java-react/scripts/set-version.sh"},{t:"secret-values.yaml.example", p:"apps/app1-java-react/.helm/secret-values.yaml.example"}],
-        img:"dora-flow.png", cap:"Метрики DORA: статусы job-ов, временные метки"}
+        "при переносе в прод меняется конфигурация окружения, не логика доставки",
+        "четыре метрики DORA с артефактов контура; кода сбора в репозитории нет, описана концепция",
+        "версия едина на продукт: <code>VERSION</code> раскатывается <code>set-version.sh</code>, отдаётся как <code>CI_TAG</code>",
+        "подробности интеграции с CI и хранения секретов — на следующих двух слайдах"
+      ], show:"компромиссы и безопасность схемы, метрики DORA",
+        gh:[{t:"security-and-tradeoffs.md", p:"docs/concepts/security-and-tradeoffs.md"},{t:"set-version.sh", p:"apps/app1-java-react/scripts/set-version.sh"}],
+        img:"dora-flow.png", cap:"Метрики DORA: статусы job-ов, временные метки"},
+      {no:15, title:"Интеграция с внешними CI", theses:[
+        "те же скрипты <code>kube_ci</code> оборачиваются в пайплайн: <code>deploy-dev</code>/<code>deploy-prod</code>, <code>rollback</code>, <code>dismiss</code>, <code>cleanup</code>",
+        "GitLab CI и Jenkins — один поток: тонкая обёртка, поведение в CI и локально совпадает",
+        "автодеплой в dev на main, промоут в prod вручную (<code>when: manual</code> / <code>input</code>)",
+        "раннер/агент: docker, werf (trdl), kubectl, helm, доступ к кластеру",
+        "переменные: <code>KUBECONFIG</code>, <code>KUBECONTEXT</code>, <code>K8S_NODE_IP</code>, <code>WERF_SECRET_KEY</code> (masked/protected); версия через <code>CI_TAG</code>"
+      ], show:"маппинг операций на стадии пайплайна, примеры <code>.gitlab-ci.yml</code> / <code>Jenkinsfile</code>",
+        gh:[{t:"integrations/README.md", p:"docs/integrations/README.md"},{t:"gitlab-ci.md", p:"docs/integrations/gitlab-ci.md"},{t:"jenkins.md", p:"docs/integrations/jenkins.md"},{t:"dora-metrics.md", p:"docs/integrations/dora-metrics.md"}]},
+      {no:16, title:"Хранение секретов", theses:[
+        "пароли в <code>.helm/secrets-&lt;env&gt;.yaml</code> зашифрованы werf и коммитятся; plaintext <code>values.yaml</code> — в <code>.gitignore</code>",
+        "шаблон <code>.helm/secret-values.yaml.example</code> показывает структуру",
+        "<code>WERF_SECRET_KEY</code> — симметричный ключ; werf ищет: env → <code>.werf_secret_key</code> → <code>~/.werf/</code>; в репозиторий не коммитится",
+        "цикл: <code>cp example values.yaml</code> → правка → <code>encrypt.sh &lt;env&gt;</code> → <code>secrets-&lt;env&gt;.yaml</code>",
+        "при выкатке <code>deploy()</code> добавляет <code>--secret-values</code>; werf расшифровывает в converge в <code>.Values.secrets.*</code>",
+        "риск в ключе, ротации нет — смягчение: masked/protected-переменная CI и ротация"
+      ], show:"управление секретами werf, шаблон <code>secret-values.yaml.example</code>",
+        gh:[{t:"secrets.md", p:"docs/delivery/secrets.md"},{t:"secret-values.yaml.example", p:"apps/app1-java-react/.helm/secret-values.yaml.example"},{t:".helm/secrets/readme.md", p:"apps/app1-java-react/.helm/secrets/readme.md"}]}
     ]
   },
   {
-    n:10, title:"Выводы", dur:"2 мин", cum:"50:00–52:00",
+    n:10, title:"Выводы", dur:"2 мин", cum:"54:00–56:00",
     goal:"Собрать доклад в одно утверждение.",
     note:["Контур опирается на контракт <code>.helm/def.sh</code>, поэтому два разнородных продукта доставляются одним кодом. Разработка идёт прямо в кластере: dev почти идентичен prod, отлаживается сама логика Kubernetes, а цикл правка → push → converge замыкается через git. werf сшивает сборку и релиз из одного git-состояния и сводит доставку к набору операций. Послабления демо понятны и обратимы — при переносе в прод меняется конфигурация окружения, не логика доставки. Всё это — дистилляция практики 2020–2025, а не учебная конструкция."],
     slides:[
-      {no:15, title:"Выводы", theses:[
+      {no:17, title:"Выводы", theses:[
         "контракт <code>.helm/def.sh</code> — два разнородных продукта одним кодом",
         "разработка прямо в кластере: dev≈prod, отладка k8s, цикл правка → push → converge через git",
         "werf сшивает сборку и релиз из одного git-состояния, доставка — набор операций",
@@ -386,11 +414,11 @@ const BLOCKS = [
     ]
   },
   {
-    n:11, title:"Вопросы", dur:"8 мин", cum:"52:00–60:00",
+    n:11, title:"Вопросы", dur:"8 мин", cum:"56:00–64:00",
     goal:"Ответить на вопросы аудитории.",
     note:["Открываем обсуждение. Острые места предсказуемы — держать короткий ответ и ссылку на профильную статью по каждому: чем dev-in-cluster лучше docker-compose, что отлаживается в кластере и не видно в compose, как переживают рестарт кеши и волумы, как работает <code>git pull</code> по ключу в поде, не дорого ли держать dev-поды, а также insecure-registry, loose-giterminism, общий кластер dev/prod, nip.io, ключ werf. Заготовленные ответы — в банке вопросов."],
     slides:[
-      {no:16, title:"Вопросы", theses:[
+      {no:18, title:"Вопросы", theses:[
         "открыть обсуждение",
         "backup-слайды держать наготове: dev-in-cluster vs docker-compose, что отлаживается в кластере, кеши/волумы при рестарте, <code>git pull</code> по ключу в поде, цена dev-подов",
         "плюс острые места схемы: insecure-registry, loose-giterminism, общий кластер, nip.io, ключ werf"
@@ -418,8 +446,10 @@ const DOC = {
   12:{slug:'kube-ci-operations', gh:'docs/delivery/kube-ci-operations.md'},
   13:{slug:'dev-prod', gh:'docs/delivery/dev-prod.md'},
   14:{slug:'security-and-tradeoffs', gh:'docs/concepts/security-and-tradeoffs.md'},
-  15:{slug:'readme', gh:'docs/README.md'},
-  16:{slug:'qa-bank', gh:'docs/demo/qa-bank.md'}
+  15:{slug:'integrations', gh:'docs/integrations/README.md'},
+  16:{slug:'secrets', gh:'docs/delivery/secrets.md'},
+  17:{slug:'readme', gh:'docs/README.md'},
+  18:{slug:'qa-bank', gh:'docs/demo/qa-bank.md'}
 };
 
 function embedPanel(doc){
@@ -499,6 +529,9 @@ function slideHTML(s){
     </section>`;
   }
   const theses = `<ul class="theses">${sl.theses.map(t=>`<li>${t}</li>`).join('')}</ul>`;
+  const fig = sl.img
+    ? `<figure class="slide-fig"><img src="../pics/${sl.img}" alt="${sl.cap||''}"><figcaption>${sl.cap||''}</figcaption></figure>`
+    : '';
   return `<section class="slide content${core?' is-core':''}">
     <div class="s-head">
       <span class="blk">Блок ${b.n} · <b>${b.title}</b></span>
@@ -507,7 +540,7 @@ function slideHTML(s){
     <div class="s-body">
       <div class="s-slideno">Слайд ${sl.no}</div>
       <h2>${sl.title}</h2>
-      <div class="s-grid embed">${theses}${embedPanel(doc)}</div>
+      <div class="s-grid embed"><div class="left-col">${theses}${fig}</div>${embedPanel(doc)}</div>
       ${footHTML(sl, doc)}
     </div>
   </section>`;

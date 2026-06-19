@@ -23,6 +23,8 @@ declare -A DOCS=(
   [kube-ci-operations]="docs/delivery/kube-ci-operations.md"
   [dev-prod]="docs/delivery/dev-prod.md"
   [security-and-tradeoffs]="docs/concepts/security-and-tradeoffs.md"
+  [integrations]="docs/integrations/README.md"
+  [secrets]="docs/delivery/secrets.md"
   [qa-bank]="docs/demo/qa-bank.md"
 )
 

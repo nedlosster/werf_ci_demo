@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>README.md</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    span.underline{text-decoration: underline;}
+    div.column{display: inline-block; vertical-align: top; width: 50%;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    ul.task-list{list-style: none;}
+  </style>
+  <link rel="stylesheet" href="embed.css" />
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">README.md</h1>
+</header>
+<h1 id="интеграции">Интеграции</h1>
+<p>Раздел описывает подключение скриптов <code>kube_ci</code> к внешним CI-системам и сбор метрик поставки. Базовые операции остаются теми же, что и при локальном запуске; CI-система лишь вызывает их в своём окружении с нужными доступами.</p>
+<p>Требования к раннеру и инструментам совпадают с требованиями к рабочей машине – см. <a href="../kubernetes/requirements.md">../kubernetes/requirements.md</a>.</p>
+<h2 id="статьи">Статьи</h2>
+<ul>
+<li><a href="gitlab-ci.md">gitlab-ci.md</a> – подключение системы скриптов kube_ci к GitLab CI: раннер, переменные, маппинг операций на стадии, <code>.gitlab-ci.yml</code>.</li>
+<li><a href="jenkins.md">jenkins.md</a> – подключение kube_ci к Jenkins: агент, credentials, маппинг операций на stage’и, declarative <code>Jenkinsfile</code>.</li>
+<li><a href="dora-metrics.md">dora-metrics.md</a> – четыре метрики DORA и точки съёма сигналов на этом контуре (пайплайны CI, git-история, факты запуска скриптов).</li>
+</ul>
+</body>
+</html>
