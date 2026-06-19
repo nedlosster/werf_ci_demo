@@ -6,16 +6,18 @@
 <title>Презентация доклада</title>
 <!--
   Полноэкранная презентация доклада. Один слайд на экран, навигация вперёд/назад.
-  Содержание (META + BLOCKS) — копия один-в-один из docs/demo/talk-flow.html;
-  при правке тезисов синхронизировать оба файла. Диаграммы — ссылки на ../pics/*.png,
-  ссылки на исходники — на GitHub (REPO ниже). Управление: ← →, PageUp/Down,
-  Space, Home/End, F — во весь экран.
+  Цветовое решение и оформление — как в docs/demo/talk-flow.html (светлая схема).
+  Содержание (META + BLOCKS) — копия один-в-один из talk-flow.html; при правке
+  тезисов синхронизировать оба файла. Диаграммы — ссылки на ../pics/*.png, ссылки
+  на исходники — на GitHub (REPO ниже). Управление: ← →, PageUp/Down, Space,
+  Home/End, F — во весь экран.
 -->
 <style>
   :root{
-    --bg:#0d1117; --panel:#161b22; --panel2:#1c2230; --ink:#e6edf3; --muted:#9aa6b2;
-    --accent:#4493f8; --accent-soft:#13315f; --core:#3fb950; --core-soft:#123a22;
-    --line:#30363d; --code:#1f2630;
+    --bg:#eef1f5; --card:#ffffff; --ink:#1b2430; --muted:#5c6775;
+    --accent:#1f6feb; --accent-soft:#e7f0ff; --core:#0f7b56; --core-soft:#e3f5ec;
+    --line:#d6dce4; --code:#f0f2f5;
+    --shadow:0 1px 3px rgba(20,30,45,.08),0 8px 24px rgba(20,30,45,.07);
   }
   *{box-sizing:border-box}
   html,body{height:100%; margin:0}
@@ -26,38 +28,41 @@
   }
   code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
     background:var(--code); padding:.05em .35em; border-radius:5px;
-    font-size:.86em; color:#cdd9e5}
+    font-size:.86em; color:#1c2530}
   a{color:var(--accent); text-decoration:none}
 
   /* прогресс-бар */
   .progress{position:fixed; top:0; left:0; right:0; height:4px;
-    background:rgba(255,255,255,.06); z-index:30}
+    background:rgba(20,30,45,.08); z-index:30}
   .progress-fill{height:100%; width:0; background:var(--accent); transition:width .25s ease}
 
   /* контейнер слайдов */
   .deck{position:fixed; inset:0}
-  .slide{position:absolute; inset:0; display:flex; flex-direction:column;
-    padding:clamp(28px,5vh,64px) clamp(32px,6vw,96px) clamp(70px,10vh,96px);
-    opacity:0; visibility:hidden; transition:opacity .25s ease;
-    overflow:auto}
+  .slide{position:absolute; inset:clamp(10px,1.5vw,20px);
+    display:flex; flex-direction:column;
+    background:var(--card); border:1px solid var(--line); border-radius:14px;
+    box-shadow:var(--shadow);
+    padding:clamp(26px,4.6vh,56px) clamp(30px,5vw,72px) clamp(64px,9vh,84px);
+    opacity:0; visibility:hidden; transition:opacity .25s ease; overflow:auto}
   .slide.is-active{opacity:1; visibility:visible}
 
   /* шапка контентного слайда */
   .s-head{display:flex; align-items:center; gap:16px; flex-wrap:wrap;
-    padding-bottom:14px; border-bottom:1px solid var(--line); margin-bottom:clamp(14px,3vh,30px)}
+    padding-bottom:14px; border-bottom:3px solid var(--accent);
+    margin-bottom:clamp(14px,3vh,28px)}
   .s-head .blk{font-size:clamp(13px,1.7vh,16px); color:var(--muted)}
   .s-head .blk b{color:var(--ink); font-weight:600}
   .s-head .badge{margin-left:auto; font-size:clamp(12px,1.6vh,15px); font-weight:600;
-    padding:4px 13px; border-radius:20px; background:var(--accent-soft); color:#9ec5ff;
+    padding:4px 13px; border-radius:20px; background:var(--accent-soft); color:var(--accent);
     font-variant-numeric:tabular-nums; white-space:nowrap}
   .is-core .s-head{border-bottom-color:var(--core)}
-  .is-core .s-head .badge{background:var(--core-soft); color:#5fd07f}
+  .is-core .s-head .badge{background:var(--core-soft); color:var(--core)}
 
   /* тело */
   .s-body{flex:1; display:flex; flex-direction:column; min-height:0}
   .s-slideno{font-size:clamp(11px,1.5vh,13px); letter-spacing:1.5px;
     text-transform:uppercase; color:var(--muted); margin-bottom:6px}
-  .s-body h2{margin:0 0 clamp(12px,2.5vh,26px); font-size:clamp(26px,4.6vh,46px);
+  .s-body h2{margin:0 0 clamp(12px,2.5vh,24px); font-size:clamp(25px,4.4vh,44px);
     line-height:1.15; letter-spacing:-.5px}
 
   .s-grid{flex:1; display:grid; grid-template-columns:1.05fr .95fr;
@@ -75,9 +80,10 @@
   .theses li::before{content:""; position:absolute; left:6px; top:.55em;
     width:9px; height:9px; border-radius:50%; background:var(--accent)}
   .is-core .theses li::before{background:var(--core)}
+  .theses.small li{font-size:clamp(13px,1.9vh,18px); margin:clamp(5px,1.1vh,11px) 0}
 
   /* подвал слайда: показать + github */
-  .s-foot{margin-top:clamp(12px,2.4vh,24px); padding-top:12px;
+  .s-foot{margin-top:clamp(12px,2.4vh,22px); padding-top:12px;
     border-top:1px dashed var(--line)}
   .s-foot .show{font-size:clamp(12px,1.7vh,15px); color:var(--muted)}
   .s-foot .show b{color:var(--ink)}
@@ -85,10 +91,20 @@
   .s-foot .gh .lbl{font-size:clamp(12px,1.6vh,14px); color:var(--ink); font-weight:600}
   .s-foot .gh a{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
     font-size:clamp(11px,1.5vh,13px); padding:3px 10px; border:1px solid var(--line);
-    border-radius:7px; background:var(--panel2); color:#9ec5ff}
+    border-radius:7px; background:#f7f9fc; color:var(--accent)}
   .s-foot .gh a:hover{border-color:var(--accent); background:var(--accent-soft)}
 
-  /* титул */
+  /* титульный контентный слайд (Слайд 1): текстовый титул + скриншот индекса */
+  .title-col{align-self:center}
+  .title-col .kicker{font-size:clamp(12px,1.7vh,15px); letter-spacing:2.5px;
+    text-transform:uppercase; color:var(--accent); margin-bottom:14px}
+  .title-col .title-h{margin:0 0 14px; font-size:clamp(24px,4.2vh,42px);
+    line-height:1.12; letter-spacing:-.8px}
+  .title-col .title-sub{margin:4px 0; color:var(--muted); font-size:clamp(14px,2vh,19px)}
+  .title-col .who{margin-top:16px; font-weight:600; font-size:clamp(15px,2.1vh,20px)}
+  .title-col .who span{display:block; font-weight:400; color:var(--muted); font-size:clamp(12px,1.7vh,15px)}
+
+  /* титул (cover) */
   .cover{justify-content:center; text-align:center; align-items:center}
   .cover .kicker{font-size:clamp(12px,1.8vh,15px); letter-spacing:3px;
     text-transform:uppercase; color:var(--accent); margin-bottom:clamp(16px,3vh,28px)}
@@ -98,7 +114,7 @@
   .cover .author{margin-top:clamp(28px,5vh,52px); font-size:clamp(17px,2.6vh,26px); font-weight:600}
   .cover .org{font-size:clamp(13px,1.9vh,17px); color:var(--muted); margin-top:4px}
   .cover .hint{margin-top:clamp(26px,5vh,46px); font-size:13px; color:var(--muted)}
-  .cover .hint kbd{background:var(--panel2); border:1px solid var(--line);
+  .cover .hint kbd{background:#f0f2f5; border:1px solid var(--line);
     border-radius:5px; padding:1px 7px; font-family:inherit; font-size:12px}
 
   /* закрытие */
@@ -110,25 +126,25 @@
   .outro .contacts .c-lbl{font-size:13px; color:var(--muted); letter-spacing:1px; text-transform:uppercase}
 
   /* навигация */
-  .nav{position:fixed; bottom:16px; left:50%; transform:translateX(-50%); z-index:30;
+  .nav{position:fixed; bottom:18px; left:50%; transform:translateX(-50%); z-index:30;
     display:flex; align-items:center; gap:10px; padding:7px 10px;
-    background:rgba(22,27,34,.92); border:1px solid var(--line); border-radius:30px;
-    backdrop-filter:blur(6px)}
+    background:rgba(255,255,255,.94); border:1px solid var(--line); border-radius:30px;
+    box-shadow:var(--shadow); backdrop-filter:blur(6px)}
   .nav-btn{appearance:none; cursor:pointer; border:1px solid var(--line);
-    background:var(--panel2); color:var(--ink); border-radius:50%; width:38px; height:38px;
+    background:#fff; color:var(--ink); border-radius:50%; width:38px; height:38px;
     font-size:20px; line-height:1; display:flex; align-items:center; justify-content:center}
-  .nav-btn:hover{border-color:var(--accent); color:#9ec5ff}
+  .nav-btn:hover{border-color:var(--accent); color:var(--accent)}
   .nav-btn:disabled{opacity:.35; cursor:default}
   .nav-btn.fs{width:auto; border-radius:20px; padding:0 14px; font-size:13px; font-weight:600}
   .counter{min-width:62px; text-align:center; font-size:14px; color:var(--muted);
     font-variant-numeric:tabular-nums}
 
   @media print{
-    body{overflow:visible}
+    body{overflow:visible; background:#fff}
     .progress,.nav{display:none}
     .deck{position:static}
-    .slide{position:relative; opacity:1!important; visibility:visible!important;
-      break-after:page; min-height:100vh; border-bottom:1px solid #ccc}
+    .slide{position:relative; inset:auto; opacity:1!important; visibility:visible!important;
+      break-after:page; min-height:96vh; box-shadow:none; margin:0 0 10px}
   }
 </style>
 </head>
@@ -398,6 +414,36 @@ function slideHTML(s){
     </section>`;
   }
   const b = s.b, sl = s.sl, core = !!b.core;
+  const gh0 = sl.gh
+    ? `<div class="gh"><span class="lbl">GitHub:</span>${sl.gh.map(g=>`<a href="${REPO}${g.p}" target="_blank" rel="noopener">${g.t}</a>`).join('')}</div>`
+    : '';
+  // Слайд 1 «Титул»: текстовый титул слева + скриншот индекса документации справа
+  if(b.n === 1 && sl.no === 1){
+    return `<section class="slide content title-slide">
+      <div class="s-head">
+        <span class="blk">Блок ${b.n} · <b>${b.title}</b></span>
+        <span class="badge">${b.dur} · ${b.cum}</span>
+      </div>
+      <div class="s-body">
+        <div class="s-slideno">Слайд ${sl.no}</div>
+        <div class="s-grid">
+          <div class="title-col">
+            <div class="kicker">Демонстрация · ГНИВЦ</div>
+            <h2 class="title-h">${META.title}</h2>
+            <p class="title-sub">${META.sub1}</p>
+            <p class="title-sub">${META.sub2}</p>
+            <div class="who">Олейник Денис Сергеевич<span>ГНИВЦ</span></div>
+            <ul class="theses small">${sl.theses.map(t=>`<li>${t}</li>`).join('')}</ul>
+          </div>
+          <figure><img src="../pics/docs-index.png" alt="Индекс документации"><figcaption>Индекс документации (docs/README.md)</figcaption></figure>
+        </div>
+        <div class="s-foot">
+          <div class="show"><b>Показать:</b> ${sl.show}.</div>
+          ${gh0}
+        </div>
+      </div>
+    </section>`;
+  }
   const theses = `<ul class="theses">${sl.theses.map(t=>`<li>${t}</li>`).join('')}</ul>`;
   const body = sl.img
     ? `<div class="s-grid">${theses}<figure><img src="../pics/${sl.img}" alt="${sl.cap||''}"><figcaption>${sl.cap||''}</figcaption></figure></div>`
