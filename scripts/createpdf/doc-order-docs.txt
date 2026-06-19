@@ -36,6 +36,7 @@ delivery/versioning.md
 delivery/dev-in-cluster.md
 delivery/dev-caches-and-volumes.md
 delivery/dev-workflow-cycle.md
+delivery/dev-in-cluster-vs-tools.md
 
 ## Интеграции
 integrations/README.md

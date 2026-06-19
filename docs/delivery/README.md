@@ -29,3 +29,6 @@
 - [dev-workflow-cycle.md](dev-workflow-cycle.md) -- типовой цикл работы в
   dev-поде: подключение, `git pull`, петля правка-отладка-тест, `git push`,
   выкат через `kube_ci` в dev и prod.
+- [dev-in-cluster-vs-tools.md](dev-in-cluster-vs-tools.md) -- сравнение dev-схемы
+  с inner-loop-инструментами (Tilt, Skaffold, okteto, Telepresence) и push-доставки
+  с GitOps-операторами (ArgoCD, Flux); когда оправдан какой подход.
